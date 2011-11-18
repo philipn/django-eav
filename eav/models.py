@@ -57,14 +57,14 @@ class EnumValue(models.Model):
 
     For example:
 
-    >>> yes = EnumValue.objects.create(value='yes')
-    >>> no = EnumValue.objects.create(value='no')
-    >>> unkown = EnumValue.objects.create(value='unkown')
+    > yes = EnumValue.objects.create(value='yes')
+    > no = EnumValue.objects.create(value='no')
+    > unkown = EnumValue.objects.create(value='unkown')
 
-    >>> ynu = EnumGroup.objects.create(name='Yes / No / Unkown')
-    >>> ynu.enums.add(yes, no, unkown)
+    > ynu = EnumGroup.objects.create(name='Yes / No / Unkown')
+    > ynu.enums.add(yes, no, unkown)
 
-    >>> Atrribute.objects.create(name='Has Fever?',
+    > Attribute.objects.create(name='Has Fever?',
     ...                          datatype=Attribute.TYPE_ENUM,
     ...                          enum_group=ynu)
 
@@ -130,18 +130,18 @@ class Attribute(models.Model):
 
     Examples:
 
-    >>> Attribute.objects.create(name='Height', datatype=Attribute.TYPE_INT)
+    > Attribute.objects.create(name='Height', datatype=Attribute.TYPE_INT)
     <Attribute: Height (Integer)>
 
-    >>> Attribute.objects.create(name='Color', datatype=Attribute.TYPE_TEXT)
+    > Attribute.objects.create(name='Color', datatype=Attribute.TYPE_TEXT)
     <Attribute: Color (Text)>
 
-    >>> yes = EnumValue.objects.create(value='yes')
-    >>> no = EnumValue.objects.create(value='no')
-    >>> unkown = EnumValue.objects.create(value='unkown')
-    >>> ynu = EnumGroup.objects.create(name='Yes / No / Unkown')
-    >>> ynu.enums.add(yes, no, unkown)
-    >>> Atrribute.objects.create(name='Has Fever?',
+    > yes = EnumValue.objects.create(value='yes')
+    > no = EnumValue.objects.create(value='no')
+    > unkown = EnumValue.objects.create(value='unkown')
+    > ynu = EnumGroup.objects.create(name='Yes / No / Unkown')
+    > ynu.enums.add(yes, no, unkown)
+    > Attribute.objects.create(name='Has Fever?',
     ...                          datatype=Attribute.TYPE_ENUM,
     ...                          enum_group=ynu)
     <Attribute: Has Fever? (Multiple Choice)>
@@ -324,13 +324,13 @@ class Value(models.Model):
 
     Example:
 
-    >>> import eav
-    >>> from django.contrib.auth.models import User
-    >>> eav.register(User)
-    >>> u = User.objects.create(username='crazy_dev_user')
-    >>> a = Attribute.objects.create(name='Favorite Drink', datatype='text',
+    > import eav
+    > from django.contrib.auth.models import User
+    > eav.register(User)
+    > u = User.objects.create(username='crazy_dev_user')
+    > a = Attribute.objects.create(name='Favorite Drink', datatype='text',
     ... slug='fav_drink')
-    >>> Value.objects.create(entity=u, attribute=a, value_text='red bull')
+    > Value.objects.create(entity=u, attribute=a, value_text='red bull')
     <Value: crazy_dev_user - Favorite Drink: "red bull">
     '''
 
@@ -505,7 +505,7 @@ class Entity(object):
 
         This would allow you to do:
 
-        >>> for i in m.eav: print i
+        > for i in m.eav: print i
         '''
         return iter(self.get_values())
 
