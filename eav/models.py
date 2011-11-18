@@ -152,7 +152,7 @@ class Attribute(models.Model):
 
     class Meta:
         ordering = ['name']
-        unique_together = ('site', 'slug')
+        unique_together = ('site', 'slug', 'parent')
 
     TYPE_TEXT = 'text'
     TYPE_FLOAT = 'float'
@@ -206,6 +206,9 @@ class Attribute(models.Model):
 
     objects = models.Manager()
     on_site = CurrentSiteManager()
+    
+    #reference to Django model that this attribute is restricted to
+    parent = models.ForeignKey(ContentType, null=True, blank=True)
 
     def get_validators(self):
         '''
