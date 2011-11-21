@@ -209,6 +209,12 @@ class Attribute(models.Model):
     
     #reference to Django model that this attribute is restricted to
     parent = models.ForeignKey(ContentType, null=True, blank=True)
+    
+    def __init__(self, *args, **kwargs):
+        parent = kwargs.get('parent', None)
+        if parent and not isinstance(parent, ContentType):
+            kwargs['parent'] = ContentType.objects.get_for_model(parent)
+        return super(Attribute, self).__init__(*args, **kwargs)
 
     def get_validators(self):
         '''
@@ -250,6 +256,9 @@ class Attribute(models.Model):
         '''
         Saves the Attribute and auto-generates a slug field if one wasn't
         provided.
+        
+        If parent provided is not already a ContentType, calculate this.  
+        Yes, this means you can't add Attributes for the ContentType model.
         '''
         if not self.slug:
             self.slug = EavSlugField.create_slug_from_name(self.name)
