@@ -30,7 +30,7 @@ setup(
                 'Django app.',
     long_description=open('README.rst').read(),
 
-    url='http://github.com/mvpdev/django-eav',
+    url='http://github.com/georgedorn/django-eav',
 
     packages=['eav', 'eav.tests'],
 
