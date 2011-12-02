@@ -215,7 +215,7 @@ class Attribute(models.Model):
         if parent and not isinstance(parent, ContentType):
             kwargs['parent'] = ContentType.objects.get_for_model(parent)
         return super(Attribute, self).__init__(*args, **kwargs)
-
+    
     def get_validators(self):
         '''
         Returns the appropriate validator function from :mod:`~eav.validators`
@@ -324,6 +324,27 @@ class Attribute(models.Model):
 
     def __unicode__(self):
         return u"%s (%s)" % (self.name, self.get_datatype_display())
+    
+class PartitionedAttributeManager(models.Manager):
+    def get_query_set(self):
+        qs = super(PartitionedAttributeManager, self).get_query_set()
+        if self.model.parent_model:
+            ctype = ContentType.objects.get_for_model(model=self.model.parent_model)
+            return qs.filter(parent=ctype)
+        else:
+            return qs
+
+class PartitionedAttribute(Attribute):
+    """
+    A proxy model class to handle segregating types of Attributes by the
+    Entities they can be applied to.
+    """
+    objects = PartitionedAttributeManager()
+    parent_model = None #this must be set in the derived class or this isn't actually partitioned
+    
+    class Meta:
+        proxy = True
+        
 
 
 class Value(models.Model):

@@ -22,6 +22,8 @@ from django.contrib import admin
 from django.contrib.admin.options import (
     ModelAdmin, InlineModelAdmin, StackedInline
 )
+
+from django.db import models
 from django.forms.models import BaseInlineFormSet
 from django.utils.safestring import mark_safe
 from django.contrib.contenttypes.models import ContentType
@@ -101,15 +103,6 @@ class AttributeAdmin(ModelAdmin):
     prepopulated_fields = {'slug': ('name',)}
     
     
-class PartitionedAttribute(Attribute):
-    """
-    A proxy model class to handle segregating types of Attributes by the
-    Entities they can be applied to.
-    """
-    class Meta:
-        proxy = True    
-    
-    
 class PartitionedAttributeAdmin(AttributeAdmin):
     """
     Abstract base class for Admins of specific types of Attributes.
@@ -118,14 +111,14 @@ class PartitionedAttributeAdmin(AttributeAdmin):
     """
     exclude = ('parent',)
 
-    def queryset(self, request):
-        """
-        Instead of returning all Attributes, return only those
-        pertaining to a specific model, specified by subclass's parent_model.
-        """
-        qs = super(PartitionedAttributeAdmin, self).queryset(request)
-        ctype = ContentType.objects.get_for_model(self.parent_model)
-        return qs.filter(parent=ctype)
+#    def queryset(self, request):
+#        """
+#        Instead of returning all Attributes, return only those
+#        pertaining to a specific model, specified by subclass's parent_model.
+#        """
+#        qs = super(PartitionedAttributeAdmin, self).queryset(request)
+#        ctype = ContentType.objects.get_for_model(self.parent_model)
+#        return qs.filter(parent=ctype)
 
     def save_model(self, request, obj, form, change):
         """
