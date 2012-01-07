@@ -30,8 +30,11 @@ from django.contrib.contenttypes.models import ContentType
 
 
 from .models import Attribute, Value, EnumValue, EnumGroup
+from .forms import BaseDynamicEntityForm
+
 
 class BaseEntityAdmin(ModelAdmin):
+    form = BaseDynamicEntityForm
     
     def render_change_form(self, request, context, add=False, change=False, form_url='', obj=None):
         """
@@ -54,6 +57,13 @@ class BaseEntityAdmin(ModelAdmin):
 
         super_meth = super(BaseEntityAdmin, self).render_change_form
         return super_meth(request, context, add, change, form_url, obj)
+
+    def add_list_display_fields(self):
+        existing = self.list_display
+        
+        fields = 
+        
+        
 
 
 class BaseEntityInlineFormSet(BaseInlineFormSet):
@@ -111,14 +121,14 @@ class PartitionedAttributeAdmin(AttributeAdmin):
     """
     exclude = ('parent',)
 
-#    def queryset(self, request):
-#        """
-#        Instead of returning all Attributes, return only those
-#        pertaining to a specific model, specified by subclass's parent_model.
-#        """
-#        qs = super(PartitionedAttributeAdmin, self).queryset(request)
-#        ctype = ContentType.objects.get_for_model(self.parent_model)
-#        return qs.filter(parent=ctype)
+    def queryset(self, request):
+        """
+        Instead of returning all Attributes, return only those
+        pertaining to a specific model, specified by subclass's parent_model.
+        """
+        qs = super(PartitionedAttributeAdmin, self).queryset(request)
+        ctype = ContentType.objects.get_for_model(self.parent_model)
+        return qs.filter(parent=ctype)
 
     def save_model(self, request, obj, form, change):
         """
@@ -129,8 +139,12 @@ class PartitionedAttributeAdmin(AttributeAdmin):
         obj.save()
 
 
-admin.site.register(Attribute, AttributeAdmin)
-admin.site.register(Value)
-admin.site.register(EnumValue)
-admin.site.register(EnumGroup)
+def register_admin():
+    """
+    Don't automatically register the generic EAV models unless asked.
+    """
+    admin.site.register(Attribute, AttributeAdmin)
+    admin.site.register(Value)
+    admin.site.register(EnumValue)
+    admin.site.register(EnumGroup)
 
