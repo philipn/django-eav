@@ -16,7 +16,7 @@
 #
 #    You should have received a copy of the GNU Lesser General Public License
 #    along with EAV-Django.  If not, see <http://gnu.org/licenses/>.
-from distutils.core import setup
+from setuptools import setup, find_packages
 
 setup(
     name='django-eav',
@@ -32,7 +32,7 @@ setup(
 
     url='http://github.com/georgedorn/django-eav',
 
-    packages=['eav', 'eav.tests'],
+    packages=find_packages(),
 
     classifiers  = [
         'Development Status :: 4 - Beta',
