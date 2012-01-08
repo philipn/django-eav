@@ -36,6 +36,7 @@ from distutils.version import StrictVersion
 
 class BaseEntityAdmin(ModelAdmin):
     form = BaseDynamicEntityForm
+    attribute_class = None
     
     def render_change_form(self, request, context, add=False, change=False, form_url='', obj=None):
         """
