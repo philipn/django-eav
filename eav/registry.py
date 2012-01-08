@@ -167,7 +167,7 @@ class Registry(object):
         Set up the generic relation for the entity
         '''
         rel_name = self.config_cls.generic_relation_related_name or \
-                   self.model_cls.__name__
+                   'entity'
 
         gr_name = self.config_cls.generic_relation_attr.lower()
         generic_relation = \
