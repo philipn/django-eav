@@ -203,6 +203,7 @@ class Attribute(models.Model):
     modified = models.DateTimeField(_(u"modified"), auto_now=True)
 
     required = models.BooleanField(_(u"required"), default=False)
+    display_in_list = models.BooleanField(_(u"display_in_list"), default=False)
 
     objects = models.Manager()
     on_site = CurrentSiteManager()

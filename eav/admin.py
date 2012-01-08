@@ -31,6 +31,7 @@ from django.contrib.contenttypes.models import ContentType
 
 from .models import Attribute, Value, EnumValue, EnumGroup
 from .forms import BaseDynamicEntityForm
+from distutils.version import StrictVersion
 
 
 class BaseEntityAdmin(ModelAdmin):
@@ -58,14 +59,40 @@ class BaseEntityAdmin(ModelAdmin):
         super_meth = super(BaseEntityAdmin, self).render_change_form
         return super_meth(request, context, add, change, form_url, obj)
 
-    def add_list_display_fields(self):
-        existing = self.list_display
-        
-        fields = 
-        
-        
 
+    import django
+    if (1,4) > django.VERSION:
+        def changelist_view(self, request, extra_context=None):
+            """
+            Override of changelist_view to provide dynamic calculation of 
+            list_display.  This will no longer be necessary after Django 1.4 -
+            see django changeset 16340.
+            
+            This may not be threadsafe.  Don't do anything with side effects.
+            """
+            if hasattr(self, 'get_list_display'):
+                self.list_display = self.get_list_display(request)
+            return super(BaseEntityAdmin, self).changelist_view(request, extra_context)
 
+        
+    def get_list_display(self, request):
+        """
+        Adds all attributes configured with display_in_list
+        to the changelist view.  Override to customize.
+        """
+        base_list_display = list(self.list_display)
+        attribute_class = self.attribute_class or Attribute
+        for attribute in attribute_class.objects.filter(display_in_list=True):
+            func_name = "eav_%s" % attribute.slug
+            if func_name in self.list_display:
+                continue
+            func = lambda x, attr=attribute: x.eav.get_value_by_attribute(attr).value
+            func.short_description = attribute.name
+            setattr(self.model, func_name, func)
+            base_list_display.append(func_name)
+        return base_list_display
+            
+        
 class BaseEntityInlineFormSet(BaseInlineFormSet):
     """
     An inline formset that correctly initializes EAV forms.
