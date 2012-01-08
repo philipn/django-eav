@@ -188,8 +188,6 @@ class Attribute(models.Model):
     enum_group = models.ForeignKey(EnumGroup, verbose_name=_(u"choice group"),
                                    blank=True, null=True)
 
-    type = models.CharField(_(u"type"), max_length=20, blank=True, null=True)
-
     @property
     def help_text(self):
         return self.description
@@ -203,7 +201,7 @@ class Attribute(models.Model):
     modified = models.DateTimeField(_(u"modified"), auto_now=True)
 
     required = models.BooleanField(_(u"required"), default=False)
-    display_in_list = models.BooleanField(_(u"display_in_list"), default=False)
+    display_in_list = models.BooleanField(_(u"display in admin list view"), default=False)
 
     objects = models.Manager()
     on_site = CurrentSiteManager()
