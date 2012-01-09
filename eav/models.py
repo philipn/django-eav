@@ -202,6 +202,7 @@ class Attribute(models.Model):
 
     required = models.BooleanField(_(u"required"), default=False)
     display_in_list = models.BooleanField(_(u"display in admin list view"), default=False)
+    searchable = models.BooleanField(_(u"Allow searching on field"), default=False)
 
     objects = models.Manager()
     on_site = CurrentSiteManager()
@@ -320,6 +321,11 @@ class Attribute(models.Model):
         if value != value_obj.value:
             value_obj.value = value
             value_obj.save()
+            
+    @classmethod
+    def get_for_model(cls, model):
+        ct = ContentType.objects.get_for_model(model)
+        return cls.objects.filter(parent__in=(None, ct))
 
     def __unicode__(self):
         return u"%s (%s)" % (self.name, self.get_datatype_display())
@@ -474,6 +480,9 @@ class Entity(object):
         for this entity.
         '''
         return self.model._eav_config_cls.get_attributes()
+
+    def get_attributes_and_values(self):
+        return dict( (v.attribute.name, v.value) for v in self.get_values() )
 
     def save(self):
         '''
