@@ -6,37 +6,50 @@ from haystack import indexes
 from .models import Attribute
 
 class EAVIndex(indexes.ModelSearchIndex):
-    attribute_class = Attribute
-    
+    attribute_class = Attribute #this can be overridden
+
     def get_fields(self, *args, **kwargs):
         """
-        Adds the eav fields.
+        Adds the eav fields to the fields to be indexed by haystack.
         """
+        model = self.get_model()
         final_fields = super(EAVIndex, self).get_fields(*args, **kwargs)
-        fields = kwargs.get('fields')
+        if not model:
+            return final_fields
         excludes = kwargs.get('excludes')
         
         attribute_class = self.attribute_class or Attribute
-        model_attributes = attribute_class.get_for_model(self.model)
+        model_attributes = attribute_class.get_for_model(model)
         searchable_attributes = model_attributes.filter(searchable=True)
 
         for attr in searchable_attributes:
-            if attr.name in self.fields:
+            if attr.slug in self.fields:
                 continue
-            if excludes and attr.name in excludes:
+            if excludes and attr.slug in excludes:
                 continue
             
             index_field_class = index_field_from_eav_field(attr)
             field_kwargs = self.extra_field_kwargs
-            field_kwargs.update({'model_attr': attr.name})
-            final_fields[attr.name] = index_field_class(**field_kwargs)
-            final_fields[attr.name].set_instance_name(self.get_index_fieldname(attr))
-
+            field_kwargs.update({'model_attr': attr.slug, 'null':True})
+            final_fields[attr.slug] = index_field_class(**field_kwargs)
+            final_fields[attr.slug].set_instance_name(attr.slug)
+            final_fields[attr.slug].eav = True
+        return final_fields
+    
+    def full_prepare(self, obj):
+        """
+        Bit of a hack; set values on object for later extraction.
+        """
+        eavs = obj.eav.get_attributes_and_values()
+        for fieldname, field in self.fields.items():
+            if getattr(field, 'eav', False):
+                setattr(obj, field.model_attr, eavs.get(field.model_attr, None))
+        return super(EAVIndex, self).full_prepare(obj)
+        
             
 def index_field_from_eav_field(f, default=indexes.CharField):
     """
-    Returns the Haystack field type that would likely be associated with each
-    Django type.
+    Returns the Haystack field type that fits this eav field's attribute type.
     """
     result = default
 

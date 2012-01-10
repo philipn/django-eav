@@ -482,7 +482,7 @@ class Entity(object):
         return self.model._eav_config_cls.get_attributes()
 
     def get_attributes_and_values(self):
-        return dict( (v.attribute.name, v.value) for v in self.get_values() )
+        return dict( (v.attribute.slug, v.value) for v in self.get_values() )
 
     def save(self):
         '''
