@@ -479,7 +479,7 @@ class Entity(object):
         Return a query set of all :class:`Attribute` objects that can be set
         for this entity.
         '''
-        return self.model._eav_config_cls.get_attributes()
+        return self.model._eav_config_cls.get_attributes(entity=self.model)
 
     def get_attributes_and_values(self):
         return dict( (v.attribute.slug, v.value) for v in self.get_values() )

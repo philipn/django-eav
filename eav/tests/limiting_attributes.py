@@ -17,7 +17,7 @@ class LimitingAttributes(TestCase):
             generic_relation_related_name = 'encounters'
 
             @classmethod
-            def get_attributes(cls):
+            def get_attributes(cls, entity=None):
                 return Attribute.objects.filter(slug__contains='a')
 
         eav.register(Encounter, EncounterEavConfig)

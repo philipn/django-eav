@@ -24,7 +24,7 @@ class RegistryTests(TestCase):
             generic_relation_related_name = 'encounters'
 
             @classmethod
-            def get_attributes(cls):
+            def get_attributes(cls, entity=None):
                 return 'testing'
 
         eav.register(Encounter, EncounterEav)

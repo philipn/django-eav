@@ -50,7 +50,7 @@ class EavConfig(object):
     parent = None
 
     @classmethod
-    def get_attributes(cls):
+    def get_attributes(cls, entity=None):
         '''
         By default, all :class:`~eav.models.Attribute` object apply to an
         entity, unless you provide a custom EavConfig class overriding this.
