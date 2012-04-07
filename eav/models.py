@@ -57,14 +57,14 @@ class EnumValue(models.Model):
 
     For example:
 
-    >>> yes = EnumValue.objects.create(value='yes')
-    >>> no = EnumValue.objects.create(value='no')
-    >>> unkown = EnumValue.objects.create(value='unkown')
+    > yes = EnumValue.objects.create(value='yes')
+    > no = EnumValue.objects.create(value='no')
+    > unkown = EnumValue.objects.create(value='unkown')
 
-    >>> ynu = EnumGroup.objects.create(name='Yes / No / Unkown')
-    >>> ynu.enums.add(yes, no, unkown)
+    > ynu = EnumGroup.objects.create(name='Yes / No / Unkown')
+    > ynu.enums.add(yes, no, unkown)
 
-    >>> Atrribute.objects.create(name='Has Fever?',
+    > Attribute.objects.create(name='Has Fever?',
     ...                          datatype=Attribute.TYPE_ENUM,
     ...                          enum_group=ynu)
 
@@ -130,18 +130,18 @@ class Attribute(models.Model):
 
     Examples:
 
-    >>> Attribute.objects.create(name='Height', datatype=Attribute.TYPE_INT)
+    > Attribute.objects.create(name='Height', datatype=Attribute.TYPE_INT)
     <Attribute: Height (Integer)>
 
-    >>> Attribute.objects.create(name='Color', datatype=Attribute.TYPE_TEXT)
+    > Attribute.objects.create(name='Color', datatype=Attribute.TYPE_TEXT)
     <Attribute: Color (Text)>
 
-    >>> yes = EnumValue.objects.create(value='yes')
-    >>> no = EnumValue.objects.create(value='no')
-    >>> unkown = EnumValue.objects.create(value='unkown')
-    >>> ynu = EnumGroup.objects.create(name='Yes / No / Unkown')
-    >>> ynu.enums.add(yes, no, unkown)
-    >>> Atrribute.objects.create(name='Has Fever?',
+    > yes = EnumValue.objects.create(value='yes')
+    > no = EnumValue.objects.create(value='no')
+    > unkown = EnumValue.objects.create(value='unkown')
+    > ynu = EnumGroup.objects.create(name='Yes / No / Unkown')
+    > ynu.enums.add(yes, no, unkown)
+    > Attribute.objects.create(name='Has Fever?',
     ...                          datatype=Attribute.TYPE_ENUM,
     ...                          enum_group=ynu)
     <Attribute: Has Fever? (Multiple Choice)>
@@ -152,7 +152,7 @@ class Attribute(models.Model):
 
     class Meta:
         ordering = ['name']
-        unique_together = ('site', 'slug')
+        unique_together = ('site', 'slug', 'parent')
 
     TYPE_TEXT = 'text'
     TYPE_FLOAT = 'float'
@@ -188,8 +188,6 @@ class Attribute(models.Model):
     enum_group = models.ForeignKey(EnumGroup, verbose_name=_(u"choice group"),
                                    blank=True, null=True)
 
-    type = models.CharField(_(u"type"), max_length=20, blank=True, null=True)
-
     @property
     def help_text(self):
         return self.description
@@ -203,10 +201,21 @@ class Attribute(models.Model):
     modified = models.DateTimeField(_(u"modified"), auto_now=True)
 
     required = models.BooleanField(_(u"required"), default=False)
+    display_in_list = models.BooleanField(_(u"display in admin list view"), default=False)
+    searchable = models.BooleanField(_(u"Allow searching on field"), default=False)
 
     objects = models.Manager()
     on_site = CurrentSiteManager()
-
+    
+    #reference to Django model that this attribute is restricted to
+    parent = models.ForeignKey(ContentType, null=True, blank=True)
+    
+    def __init__(self, *args, **kwargs):
+        parent = kwargs.get('parent', None)
+        if parent and not isinstance(parent, ContentType):
+            kwargs['parent'] = ContentType.objects.get_for_model(parent)
+        return super(Attribute, self).__init__(*args, **kwargs)
+    
     def get_validators(self):
         '''
         Returns the appropriate validator function from :mod:`~eav.validators`
@@ -247,6 +256,9 @@ class Attribute(models.Model):
         '''
         Saves the Attribute and auto-generates a slug field if one wasn't
         provided.
+        
+        If parent provided is not already a ContentType, calculate this.  
+        Yes, this means you can't add Attributes for the ContentType model.
         '''
         if not self.slug:
             self.slug = EavSlugField.create_slug_from_name(self.name)
@@ -309,9 +321,35 @@ class Attribute(models.Model):
         if value != value_obj.value:
             value_obj.value = value
             value_obj.save()
+            
+    @classmethod
+    def get_for_model(cls, model):
+        ct = ContentType.objects.get_for_model(model)
+        return cls.objects.filter(parent__in=(None, ct))
 
     def __unicode__(self):
         return u"%s (%s)" % (self.name, self.get_datatype_display())
+    
+class PartitionedAttributeManager(models.Manager):
+    def get_query_set(self):
+        qs = super(PartitionedAttributeManager, self).get_query_set()
+        if self.model.parent_model:
+            ctype = ContentType.objects.get_for_model(model=self.model.parent_model)
+            return qs.filter(parent=ctype)
+        else:
+            return qs
+
+class PartitionedAttribute(Attribute):
+    """
+    A proxy model class to handle segregating types of Attributes by the
+    Entities they can be applied to.
+    """
+    objects = PartitionedAttributeManager()
+    parent_model = None #this must be set in the derived class or this isn't actually partitioned
+    
+    class Meta:
+        proxy = True
+        
 
 
 class Value(models.Model):
@@ -324,13 +362,13 @@ class Value(models.Model):
 
     Example:
 
-    >>> import eav
-    >>> from django.contrib.auth.models import User
-    >>> eav.register(User)
-    >>> u = User.objects.create(username='crazy_dev_user')
-    >>> a = Attribute.objects.create(name='Favorite Drink', datatype='text',
+    > import eav
+    > from django.contrib.auth.models import User
+    > eav.register(User)
+    > u = User.objects.create(username='crazy_dev_user')
+    > a = Attribute.objects.create(name='Favorite Drink', datatype='text',
     ... slug='fav_drink')
-    >>> Value.objects.create(entity=u, attribute=a, value_text='red bull')
+    > Value.objects.create(entity=u, attribute=a, value_text='red bull')
     <Value: crazy_dev_user - Favorite Drink: "red bull">
     '''
 
@@ -443,6 +481,9 @@ class Entity(object):
         '''
         return self.model._eav_config_cls.get_attributes()
 
+    def get_attributes_and_values(self):
+        return dict( (v.attribute.slug, v.value) for v in self.get_values() )
+
     def save(self):
         '''
         Saves all the EAV values that have been set on this entity.
@@ -505,7 +546,7 @@ class Entity(object):
 
         This would allow you to do:
 
-        >>> for i in m.eav: print i
+        > for i in m.eav: print i
         '''
         return iter(self.get_values())
 
