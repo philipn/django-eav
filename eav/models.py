@@ -82,6 +82,10 @@ class EnumValue(models.Model):
     def __unicode__(self):
         return self.value
 
+    class Meta:
+        verbose_name = _(u'enum value')
+        verbose_name_plural = _(u'enum values')
+
 
 class EnumGroup(models.Model):
     '''
@@ -98,6 +102,10 @@ class EnumGroup(models.Model):
 
     def __unicode__(self):
         return self.name
+
+    class Meta:
+        verbose_name = _(u'enum group')
+        verbose_name_plural = _(u'enum groups')
 
 
 class Attribute(models.Model):
@@ -153,6 +161,8 @@ class Attribute(models.Model):
     class Meta:
         ordering = ['name']
         unique_together = ('site', 'slug', 'parent')
+        verbose_name = _(u'attribute')
+        verbose_name_plural = _(u'attributes')
 
     TYPE_TEXT = 'text'
     TYPE_FLOAT = 'float'
@@ -273,7 +283,7 @@ class Attribute(models.Model):
         '''
         if self.datatype == self.TYPE_ENUM and not self.enum_group:
             raise ValidationError(_(
-                u"You must set the choice group for multiple choice" \
+                u"You must set the choice group for multiple choice " \
                 u"attributes"))
 
         if self.datatype != self.TYPE_ENUM and self.enum_group:
@@ -435,6 +445,9 @@ class Value(models.Model):
         return u"%s - %s: \"%s\"" % (self.entity, self.attribute.name,
                                      self.value)
 
+    class Meta:
+        verbose_name = _(u'value')
+        verbose_name_plural = _(u'values')
 
 class Entity(object):
     '''
