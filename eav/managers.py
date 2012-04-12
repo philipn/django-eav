@@ -186,3 +186,29 @@ class EntityManager(models.Manager):
             return self.get(**kwargs)
         except self.model.DoesNotExist:
             return self.create(**kwargs)
+
+    def get_query_set(self):
+        """
+        Return eav frendly EntityQuerySet
+        """
+        return EntityQuerySet(self.model, using=self._db)
+
+
+class EntityQuerySet(models.query.QuerySet):
+    """
+    Override basic QuerySet, for chained filter and exclude methods
+    For example: Patient.object.filter(name='Bob').filter(eav__country='Russia')
+    """
+    @eav_filter
+    def filter(self, *args, **kwargs):
+        """
+        Pass filter through :func:`eav_filter`
+        """
+        return super(EntityQuerySet, self).filter(*args, **kwargs)
+
+    @eav_filter
+    def exclude(self, *args, **kwargs):
+        """
+        Pass exclude through :func:`eav_filter`
+        """
+        return super(EntityQuerySet, self).exclude(*args, **kwargs)
