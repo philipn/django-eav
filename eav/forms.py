@@ -76,6 +76,9 @@ class BaseDynamicEntityForm(ModelForm):
 
             datatype = attribute.datatype
             if datatype == attribute.TYPE_ENUM:
+                # for enum enough standard validator
+                defaults['validators'] = []
+
                 enums = attribute.get_choices() \
                                  .values_list('id', 'value')
 

@@ -212,7 +212,7 @@ msgstr "Модель пока не может быть сохранена"
 
 #: .\validators.py:107
 msgid "Must be an EnumValue model object instance"
-msgstr "Должно быть значение из списка"
+msgstr "Должно быть экземпляром объекта варианта для выбора"
 
 #: .\validators.py:109
 msgid "EnumValue has not been saved yet"
