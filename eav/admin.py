@@ -166,6 +166,8 @@ class PartitionedAttributeAdmin(AttributeAdmin):
         obj.parent = ctype
         obj.save()
 
+class EnumGroupAdmin(ModelAdmin):
+    filter_horizontal = ('enums', )
 
 def register_admin():
     """
@@ -174,5 +176,5 @@ def register_admin():
     admin.site.register(Attribute, AttributeAdmin)
     admin.site.register(Value)
     admin.site.register(EnumValue)
-    admin.site.register(EnumGroup)
+    admin.site.register(EnumGroup, EnumGroupAdmin)
 
