@@ -1,5 +1,8 @@
 from datetime import datetime
-from django.contrib.auth.models import User
+try:
+    from django.utils.timezone import now
+except ImportError:
+    now = datetime.now
 from django.test import TestCase
 
 import eav
@@ -27,7 +30,7 @@ class FormTest(TestCase):
         Attribute.objects.create(name='Fever?', datatype=Attribute.TYPE_ENUM, enum_group=ynu, required=True)
 
     def test_form_validation(self):
-        kwargs = {'eav__age': 2, 'eav__dob': datetime.now(), 'eav__height': 14.1,
+        kwargs = {'eav__age': 2, 'eav__dob': now(), 'eav__height': 14.1,
                 'eav__city': 'SomeSity', 'eav__pregnant':False, 'eav__fever':EnumValue.objects.get(id=2)}
         p = Patient.objects.create(**kwargs)
 

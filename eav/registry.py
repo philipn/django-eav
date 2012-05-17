@@ -27,8 +27,7 @@ Classes
 -------
 '''
 
-from django.db.utils import DatabaseError
-from django.db.models.signals import pre_init, post_init, pre_save, post_save
+from django.db.models.signals import post_init, pre_save, post_save
 from django.contrib.contenttypes import generic
 from django.contrib.contenttypes.models import ContentType
 

@@ -20,10 +20,9 @@
 
 from django.contrib import admin
 from django.contrib.admin.options import (
-    ModelAdmin, InlineModelAdmin, StackedInline
+    ModelAdmin, InlineModelAdmin
 )
 
-from django.db import models
 from django.forms.models import BaseInlineFormSet
 from django.utils.safestring import mark_safe
 from django.contrib.contenttypes.models import ContentType
@@ -31,7 +30,6 @@ from django.contrib.contenttypes.models import ContentType
 
 from .models import Attribute, Value, EnumValue, EnumGroup
 from .forms import BaseDynamicEntityForm
-from distutils.version import StrictVersion
 
 
 class BaseEntityAdmin(ModelAdmin):
