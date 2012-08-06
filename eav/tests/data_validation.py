@@ -137,7 +137,7 @@ class DataValidation(TestCase):
         self.assertRaises(ValidationError, p.save)
         p.eav.user = User(username='joe')
         self.assertRaises(ValidationError, p.save)
-        u = User.objects.create(username='joe')
+        u = User.objects.create(username='joe', email='joe@example.com')
         p.eav.user = u
         p.save()
         self.assertEqual(Patient.objects.get(pk=p.pk).eav.user, u)

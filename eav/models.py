@@ -64,7 +64,7 @@ class EnumValue(models.Model):
     >>> ynu = EnumGroup.objects.create(name='Yes / No / Unkown')
     >>> ynu.enums.add(yes, no, unkown)
 
-    >>> Atrribute.objects.create(name='Has Fever?',
+    >>> Attribute.objects.create(name='Has Fever?',
     ...                          datatype=Attribute.TYPE_ENUM,
     ...                          enum_group=ynu)
 
@@ -141,7 +141,7 @@ class Attribute(models.Model):
     >>> unkown = EnumValue.objects.create(value='unkown')
     >>> ynu = EnumGroup.objects.create(name='Yes / No / Unkown')
     >>> ynu.enums.add(yes, no, unkown)
-    >>> Atrribute.objects.create(name='Has Fever?',
+    >>> Attribute.objects.create(name='Has Fever?',
     ...                          datatype=Attribute.TYPE_ENUM,
     ...                          enum_group=ynu)
     <Attribute: Has Fever? (Multiple Choice)>
@@ -327,7 +327,7 @@ class Value(models.Model):
     >>> import eav
     >>> from django.contrib.auth.models import User
     >>> eav.register(User)
-    >>> u = User.objects.create(username='crazy_dev_user')
+    >>> u = User.objects.create(username='crazy_dev_user', email='dev@dev.com')
     >>> a = Attribute.objects.create(name='Favorite Drink', datatype='text',
     ... slug='fav_drink')
     >>> Value.objects.create(entity=u, attribute=a, value_text='red bull')
@@ -505,7 +505,7 @@ class Entity(object):
 
         This would allow you to do:
 
-        >>> for i in m.eav: print i
+        >>> for i in m.eav: print i  # doctest: +SKIP
         '''
         return iter(self.get_values())
 

@@ -109,4 +109,4 @@ class Queries(TestCase):
 
         eav.register(User, UserEavConfig)
 
-        c = User.objects.create(username='joe')
+        c = User.objects.create(username='joe', email='joe@example.com')
