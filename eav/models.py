@@ -441,7 +441,11 @@ class Entity(object):
         Return a query set of all :class:`Attribute` objects that can be set
         for this entity.
         '''
-        return self.model._eav_config_cls.get_attributes(self.model)
+        # cache result
+        if not hasattr(self, '_attributes_qs'):
+            self._attributes_qs = self.model._eav_config_cls.get_attributes(
+                                                                    self.model)
+        return self._attributes_qs
 
     def save(self):
         '''
@@ -485,7 +489,11 @@ class Entity(object):
         '''
         Returns a list of slugs for all attributes available to this entity.
         '''
-        return self.get_all_attributes().values_list('slug', flat=True)
+        # cache result
+        if not hasattr(self, '_attribute_slugs'):
+            self._attribute_slugs = self.get_all_attributes().values_list(
+                                                            'slug', flat=True)
+        return self._attribute_slugs
 
     def get_attribute_by_slug(self, slug):
         '''
