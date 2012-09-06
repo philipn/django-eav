@@ -46,57 +46,16 @@ from .validators import *
 from .fields import EavSlugField, EavDatatypeField
 
 
-class EnumValue(models.Model):
-    '''
-    *EnumValue* objects are the value 'choices' to multiple choice
-    *TYPE_ENUM* :class:`Attribute` objects.
-
-    They have only one field, *value*, a``CharField`` that must be unique.
-
-    For example:
-
-    >>> yes = EnumValue.objects.create(value='yes')
-    >>> no = EnumValue.objects.create(value='no')
-    >>> unkown = EnumValue.objects.create(value='unkown')
-
-    >>> ynu = EnumGroup.objects.create(name='Yes / No / Unkown')
-    >>> ynu.enums.add(yes, no, unkown)
-
-    >>> Attribute.objects.create(name='Has Fever?',
-    ...                          datatype=Attribute.TYPE_ENUM,
-    ...                          enum_group=ynu)
-
-    .. note::
-       The same *EnumValue* objects should be reused within multiple
-       *EnumGroups*.  For example, if you have one *EnumGroup*
-       called: *Yes / No / Unkown* and another called *Yes / No /
-       Not applicable*, you should only have a total of four *EnumValues*
-       objects, as you should have used the same *Yes* and *No* *EnumValues*
-       for both *EnumGroups*.
-    '''
-    value = models.CharField(_(u"value"), db_index=True,
-                             unique=True, max_length=50)
-
-    def __unicode__(self):
-        return self.value
-
-    class Meta:
-        verbose_name = _(u'enum value')
-        verbose_name_plural = _(u'enum values')
-
-
 class EnumGroup(models.Model):
     '''
-    *EnumGroup* objects have two fields- a *name* ``CharField`` and *enums*,
-    a ``ManyToManyField`` to :class:`EnumValue`. :class:`Attribute` classes
-    with datatype *TYPE_ENUM* have a ``ForeignKey`` field to *EnumGroup*.
+    *EnumGroup* objects have just a  *name* ``CharField``. :class:`Attribute`
+    classes with datatype *TYPE_ENUM* have a ``ForeignKey`` field to
+    *EnumGroup*.
 
     See :class:`EnumValue` for an example.
 
     '''
     name = models.CharField(_(u"name"), unique=True, max_length=100)
-
-    enums = models.ManyToManyField(EnumValue, verbose_name=_(u"enum group"))
 
     def __unicode__(self):
         return self.name
@@ -104,6 +63,40 @@ class EnumGroup(models.Model):
     class Meta:
         verbose_name = _(u'enum group')
         verbose_name_plural = _(u'enum groups')
+
+
+class EnumValue(models.Model):
+    '''
+    *EnumValue* objects are the value 'choices' to multiple choice
+    *TYPE_ENUM* :class:`Attribute` objects.
+
+    They have two fields: a *value* ``CharField`` that must be unique, and
+    *group*, a ``ForeignKey`` to :class:`EnumGroup`. 
+
+    For example:
+
+    >>> yes = EnumValue(value='yes')
+    >>> no = EnumValue(value='no')
+    >>> unkown = EnumValue(value='unkown')
+
+    >>> ynu = EnumGroup.objects.create(name='Yes / No / Unkown')
+    >>> ynu.value_set.add(yes, no, unkown)
+
+    >>> Attribute.objects.create(name='Has Fever?',
+    ...                          datatype=Attribute.TYPE_ENUM,
+    ...                          enum_group=ynu)
+    '''
+    value = models.CharField(_(u"value"), db_index=True,
+                             unique=True, max_length=50)
+    group = models.ForeignKey(EnumGroup, verbose_name=_(u"group"),
+                              related_name="enums", null=True)
+
+    def __unicode__(self):
+        return self.value
+
+    class Meta:
+        verbose_name = _(u'enum value')
+        verbose_name_plural = _(u'enum values')
 
 
 class Attribute(models.Model):
@@ -142,9 +135,9 @@ class Attribute(models.Model):
     >>> Attribute.objects.create(name='Color', datatype=Attribute.TYPE_TEXT)
     <Attribute: Color (Text)>
 
-    >>> yes = EnumValue.objects.create(value='yes')
-    >>> no = EnumValue.objects.create(value='no')
-    >>> unkown = EnumValue.objects.create(value='unkown')
+    >>> yes = EnumValue(value='yes')
+    >>> no = EnumValue(value='no')
+    >>> unkown = EnumValue(value='unkown')
     >>> ynu = EnumGroup.objects.create(name='Yes / No / Unkown')
     >>> ynu.enums.add(yes, no, unkown)
     >>> Attribute.objects.create(name='Has Fever?',

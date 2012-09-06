@@ -165,7 +165,7 @@ class PartitionedAttributeAdmin(AttributeAdmin):
         obj.save()
 
 class EnumGroupAdmin(ModelAdmin):
-    filter_horizontal = ('enums', )
+    pass
 
 def register_admin():
     """
