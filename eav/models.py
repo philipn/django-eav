@@ -310,14 +310,9 @@ class Attribute(models.Model):
                                            entity_id=entity.pk,
                                            attribute=self)
         except Value.DoesNotExist:
-            if value == None or value == '':
-                return
             value_obj = Value.objects.create(entity_ct=ct,
                                              entity_id=entity.pk,
                                              attribute=self)
-        if value == None or value == '':
-            value_obj.delete()
-            return
 
         if value != value_obj.value:
             value_obj.value = value
