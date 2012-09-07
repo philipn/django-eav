@@ -494,6 +494,9 @@ class Entity(object):
         for attribute in self.get_all_attributes():
             if hasattr(self, attribute.slug):
                 attribute_value = getattr(self, attribute.slug)
+                # BUG HERE, won't be able to blank-out an attribute value
+                if attribute_value is None or attribute_value == '':
+                    continue
                 attribute.save_value(self.model, attribute_value)
 
     def validate_attributes(self):
