@@ -187,6 +187,7 @@ class Attribute(models.Model):
                              default=Site.objects.get_current)
 
     slug = EavSlugField(_(u"slug"), max_length=50, db_index=True,
+                          editable=False,
                           help_text=_(u"Short unique attribute label"))
 
     description = models.CharField(_(u"description"), max_length=256,
