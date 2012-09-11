@@ -65,6 +65,8 @@ class BaseDynamicEntityForm(ModelForm):
         self.fields = deepcopy(self.base_fields)
 
         for attribute in self.entity.get_all_attributes():
+            if not hasattr(self.entity, attribute.slug):
+                continue
             value = getattr(self.entity, attribute.slug)
 
             defaults = {
@@ -118,6 +120,8 @@ class BaseDynamicEntityForm(ModelForm):
 
         # assign attributes
         for attribute in self.entity.get_all_attributes():
+            if attribute.slug not in self.cleaned_data:
+                continue
             value = self.cleaned_data.get(attribute.slug)
             if attribute.datatype == attribute.TYPE_ENUM:
                 if value:
