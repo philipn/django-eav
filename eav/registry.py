@@ -28,11 +28,9 @@ Classes
 '''
 
 from django.db.models.signals import post_init, pre_save, post_save
-from django.contrib.contenttypes import generic
-from django.contrib.contenttypes.models import ContentType
 
 from .managers import EntityManager
-from .models import Entity, Attribute, Value
+from .models import Entity, Attribute
 
 
 class EavConfig(object):
@@ -44,8 +42,6 @@ class EavConfig(object):
     manager_attr = 'objects'
     manager_only = False
     eav_attr = 'eav'
-    generic_relation_attr = 'eav_values'
-    generic_relation_related_name = None
     parent = None
 
     @classmethod
@@ -161,33 +157,6 @@ class Registry(object):
         pre_save.disconnect(Entity.pre_save_handler, sender=self.model_cls)
         post_save.disconnect(Entity.post_save_handler, sender=self.model_cls)
 
-    def _attach_generic_relation(self):
-        '''
-        Set up the generic relation for the entity
-        '''
-        rel_name = self.config_cls.generic_relation_related_name or \
-                   'entity'
-
-        gr_name = self.config_cls.generic_relation_attr.lower()
-        generic_relation = \
-                     generic.GenericRelation(Value,
-                                             object_id_field='entity_id',
-                                             content_type_field='entity_ct',
-                                             related_name=rel_name)
-        generic_relation.contribute_to_class(self.model_cls, gr_name)
-
-    def _detach_generic_relation(self):
-        '''
-        Remove the generic relation from the entity
-        '''
-        gen_rel_field = self.config_cls.generic_relation_attr.lower()
-        for field in self.model_cls._meta.local_many_to_many:
-            if field.name == gen_rel_field:
-                self.model_cls._meta.local_many_to_many.remove(field)
-                break
-
-        delattr(self.model_cls, gen_rel_field)
-
     def _register_self(self):
         '''
         Call the necessary registration methods
@@ -196,7 +165,6 @@ class Registry(object):
 
         if not self.config_cls.manager_only:
             self._attach_signals()
-            self._attach_generic_relation()
 
     def _unregister_self(self):
         '''
@@ -206,4 +174,3 @@ class Registry(object):
 
         if not self.config_cls.manager_only:
             self._detach_signals()
-            self._detach_generic_relation()

@@ -33,6 +33,8 @@ Classes
 -------
 '''
 
+from sapling.pages.models import Page
+
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
@@ -180,7 +182,7 @@ class Attribute(models.Model):
                              default=Site.objects.get_current)
 
     slug = EavSlugField(_(u"slug"), max_length=50, db_index=True,
-                          editable=False,
+                          editable=False, unique=True,
                           help_text=_(u"Short unique attribute label"))
 
     description = models.CharField(_(u"description"), max_length=256,
@@ -305,15 +307,10 @@ class Attribute(models.Model):
            If *value* is None and a :class:`Value` object exists for this
             Attribute and *entity*, it will delete that :class:`Value` object.
         '''
-        ct = ContentType.objects.get_for_model(entity)
         try:
-            value_obj = self.value_set.get(entity_ct=ct,
-                                           entity_id=entity.pk,
-                                           attribute=self)
+            value_obj = self.value_set.get(entity=entity, attribute=self)
         except Value.DoesNotExist:
-            value_obj = Value.objects.create(entity_ct=ct,
-                                             entity_id=entity.pk,
-                                             attribute=self)
+            value_obj = Value.objects.create(entity=entity, attribute=self)
 
         if value != value_obj.value:
             value_obj.value = value
@@ -368,11 +365,7 @@ class Value(models.Model):
     > Value.objects.create(entity=u, attribute=a, value_text='red bull')
     <Value: crazy_dev_user - Favorite Drink: "red bull">
     '''
-
-    entity_ct = models.ForeignKey(ContentType, related_name='value_entities')
-    entity_id = models.IntegerField()
-    entity = generic.GenericForeignKey(ct_field='entity_ct',
-                                       fk_field='entity_id')
+    entity = models.ForeignKey(Page)
 
     value_text = models.TextField(blank=True, null=True)
     value_float = models.FloatField(blank=True, null=True)
@@ -445,10 +438,9 @@ class Entity(object):
     def __init__(self, instance):
         '''
         Set self.model equal to the instance of the model that we're attached
-        to.  Also, store the content type of that instance.
+        to.
         '''
         self.model = instance
-        self.ct = ContentType.objects.get_for_model(instance)
 
     def __getattr__(self, name):
         '''
@@ -523,8 +515,7 @@ class Entity(object):
         '''
         Get all set :class:`Value` objects for self.model
         '''
-        return Value.objects.filter(entity_ct=self.ct,
-                                    entity_id=self.model.pk).select_related()
+        return Value.objects.filter(entity=self.model).select_related()
 
     def get_all_attribute_slugs(self):
         '''
