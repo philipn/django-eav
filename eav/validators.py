@@ -86,17 +86,6 @@ def validate_bool(value):
         raise ValidationError(_(u"Must be a boolean"))
 
 
-def validate_object(value):
-    '''
-    Raises ``ValidationError`` unless *value* is a saved
-    django model instance.
-    '''
-    if not isinstance(value, models.Model):
-        raise ValidationError(_(u"Must be a django model object instance"))
-    if not value.pk:
-        raise ValidationError(_(u"Model has not been saved yet"))
-
-
 def validate_enum(value):
     '''
     Raises ``ValidationError`` unless *value* is a saved

@@ -126,7 +126,6 @@ class Attribute(models.Model):
         * text (TYPE_TEXT)
         * date (TYPE_DATE)
         * bool (TYPE_BOOLEAN)
-        * object (TYPE_OBJECT)
         * enum (TYPE_ENUM)
 
     Examples:
@@ -162,7 +161,6 @@ class Attribute(models.Model):
     TYPE_INT = 'int'
     TYPE_DATE = 'date'
     TYPE_BOOLEAN = 'bool'
-    TYPE_OBJECT = 'object'
     TYPE_ENUM = 'enum'
 
     DATATYPE_CHOICES = (
@@ -171,7 +169,6 @@ class Attribute(models.Model):
         (TYPE_INT, _(u"Integer")),
         (TYPE_DATE, _(u"Date")),
         (TYPE_BOOLEAN, _(u"True / False")),
-        (TYPE_OBJECT, _(u"Django Object")),
         (TYPE_ENUM, _(u"Multiple Choice")),
     )
 
@@ -236,7 +233,6 @@ class Attribute(models.Model):
             'int': validate_int,
             'date': validate_date,
             'bool': validate_bool,
-            'object': validate_object,
             'enum': validate_enum,
         }
 
@@ -374,12 +370,6 @@ class Value(models.Model):
     value_bool = models.NullBooleanField(blank=True, null=True)
     value_enum = models.ForeignKey(EnumValue, blank=True, null=True,
                                    related_name='eav_values')
-
-    generic_value_id = models.IntegerField(blank=True, null=True)
-    generic_value_ct = models.ForeignKey(ContentType, blank=True, null=True,
-                                         related_name='value_values')
-    value_object = generic.GenericForeignKey(ct_field='generic_value_ct',
-                                             fk_field='generic_value_id')
 
     created = models.DateTimeField(_(u"created"), auto_now_add=True)
     modified = models.DateTimeField(_(u"modified"), auto_now=True)
