@@ -33,7 +33,6 @@ class EnumGroup(models.Model):
     *EnumGroup*.
 
     See :class:`EnumValue` for an example.
-
     """
     name = models.CharField(_(u"name"), unique=True, max_length=100)
 
@@ -51,7 +50,7 @@ class EnumValue(models.Model):
     *TYPE_ENUM* :class:`Attribute` objects.
 
     They have two fields: a *value* ``CharField`` that must be unique, and
-    *group*, a ``ForeignKey`` to :class:`EnumGroup`. 
+    *group*, a ``ForeignKey`` to :class:`EnumGroup`.
 
     For example:
 
@@ -130,7 +129,7 @@ class Attribute(models.Model):
 
     class Meta:
         ordering = ['name']
-        unique_together = ('site', 'slug', 'parent')
+        unique_together = ('site', 'slug')
         verbose_name = _(u'attribute')
         verbose_name_plural = _(u'attributes')
 
@@ -177,15 +176,6 @@ class Attribute(models.Model):
     objects = models.Manager()
     on_site = CurrentSiteManager()
 
-    #reference to Django model that this attribute is restricted to
-    parent = models.ForeignKey(ContentType, null=True, blank=True)
-
-    def __init__(self, *args, **kwargs):
-        parent = kwargs.get('parent', None)
-        if parent and not isinstance(parent, ContentType):
-            kwargs['parent'] = ContentType.objects.get_for_model(parent)
-        return super(Attribute, self).__init__(*args, **kwargs)
-
     def get_validators(self):
         """
         Returns the appropriate validator function from :mod:`~eav.validators`
@@ -225,9 +215,6 @@ class Attribute(models.Model):
         """
         Saves the Attribute and auto-generates a slug field if one wasn't
         provided.
-
-        If parent provided is not already a ContentType, calculate this.  
-        Yes, this means you can't add Attributes for the ContentType model.
         """
         if not self.slug:
             self.slug = EavSlugField.create_slug_from_name(self.name)
@@ -281,24 +268,12 @@ class Attribute(models.Model):
             value_obj.value = value
             value_obj.save()
 
-    @classmethod
-    def get_for_model(cls, model):
-        ct = ContentType.objects.get_for_model(model)
-        return cls.objects.filter(parent__in=(None, ct))
-
     def __unicode__(self):
         return u"%s (%s)" % (self.name, self.get_datatype_display())
 
 
 class PartitionedAttributeManager(models.Manager):
-    def get_query_set(self):
-        qs = super(PartitionedAttributeManager, self).get_query_set()
-        if self.model.parent_model:
-            ctype = ContentType.objects.get_for_model(
-                model=self.model.parent_model)
-            return qs.filter(parent=ctype)
-        else:
-            return qs
+    pass
 
 
 class PartitionedAttribute(Attribute):
@@ -308,7 +283,7 @@ class PartitionedAttribute(Attribute):
     """
     objects = PartitionedAttributeManager()
     # This must be set in the derived class or this isn't actually partitioned
-    parent_model = None  
+    parent_model = None
 
     class Meta:
         proxy = True

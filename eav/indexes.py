@@ -20,7 +20,7 @@ class EAVIndex(indexes.ModelSearchIndex):
         excludes = kwargs.get('excludes')
 
         attribute_class = self.attribute_class or Attribute
-        model_attributes = attribute_class.get_for_model(model)
+        model_attributes = attribute_class.objects.all()
 
         for attr in model_attributes:
             if attr.slug in self.fields:

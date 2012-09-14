@@ -6,7 +6,6 @@ Classes
 """
 
 from django.db.models.signals import post_init, pre_save, post_save
-from django.contrib.contenttypes.models import ContentType
 
 from .managers import EntityManager
 from .models import Entity, Attribute
@@ -29,11 +28,7 @@ class EavConfig(object):
         By default, all :class:`~eav.models.Attribute` object apply to an
         entity, unless you provide a custom EavConfig class overriding this.
         """
-        qs = Attribute.on_site.all()
-        if cls.parent:
-            ctype = ContentType.objects.get_for_model(cls.parent)
-            qs = qs.filter(parent__in=(ctype, None))
-        return qs
+        return Attribute.on_site.all()
 
 
 class Registry(object):

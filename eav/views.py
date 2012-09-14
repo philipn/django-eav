@@ -15,11 +15,6 @@ class EAVSearchView(SearchView):
         Specifically, all of the EAV fields that could
         apply to this model.
         """
-        if self.model:
-            attributes = Attribute.get_for_model(self.model)
-        else:
-            attributes = Attribute.objects.all()
-
         org_extra_context = super(EAVSearchView, self).extra_context()
-        org_extra_context.update({'eav_attributes': attributes})
+        org_extra_context.update({'eav_attributes': Attribute.objects.all()})
         return org_extra_context
