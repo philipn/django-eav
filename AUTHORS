@@ -1,0 +1,39 @@
+Contributors to this fork of django-eav:
+
+  * Mike Ivanov <mivanov@gmail.com>
+  * Philip Neustrom <philipn@gmail.com>
+
+== django-eav ==
+
+Contributors to django-eav:
+
+  * Andrew Marder <andrew.n.marder@gmail.com>
+  * David Gelvin <david.gelvin@gmail.com>
+  * David McCann <david.a.mccann@gmail.com>
+  * Fursov Sergey <GeyseR85@gmail.com>
+  * George Dorn <georgedorn@gmail.com>
+  * Mike Ivanov <mivanov@gmail.com>
+  * Moses Katembu <mose.kate@gmail.com>
+  * Philip Neustrom <philipn@gmail.com>
+  * Rowena <rluk@dimagi.com>
+  * Sergey Fursov <GeyseR85@gmail.com>
+  * Steve Ivy <steve@wallrazer.com>
+  * Tim Sutton <tim@linfiniti.com>
+  * ksamuel <info.ksamuel@gmail.com>
+  * miclovich <vicmiclovich@gmail.com>
+
+== eav-django ==
+
+eav-django, from which django-eav was derived from, was originally created by:
+
+  * Andrey Mikhaylenko <neithere@gmail.com>.
+
+With contributions from:
+
+  * Danila Shtan
+  * Janosch Scharlipp
+  * Jordi Llonch
+  * alTus
+  * Felipe Vieira
+  * Adrien Lemaire
+  * Igor Tokarev
