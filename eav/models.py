@@ -18,7 +18,6 @@ from django.db import models
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.contenttypes import generic
 from django.contrib.sites.models import Site
 from django.contrib.sites.managers import CurrentSiteManager
 from django.conf import settings
@@ -28,14 +27,14 @@ from .fields import EavSlugField, EavDatatypeField
 
 
 class EnumGroup(models.Model):
-    '''
+    """
     *EnumGroup* objects have just a  *name* ``CharField``. :class:`Attribute`
     classes with datatype *TYPE_ENUM* have a ``ForeignKey`` field to
     *EnumGroup*.
 
     See :class:`EnumValue` for an example.
 
-    '''
+    """
     name = models.CharField(_(u"name"), unique=True, max_length=100)
 
     def __unicode__(self):
@@ -47,7 +46,7 @@ class EnumGroup(models.Model):
 
 
 class EnumValue(models.Model):
-    '''
+    """
     *EnumValue* objects are the value 'choices' to multiple choice
     *TYPE_ENUM* :class:`Attribute` objects.
 
@@ -66,7 +65,7 @@ class EnumValue(models.Model):
     >>> Attribute.objects.create(name='Has Fever?',
     ...                          datatype=Attribute.TYPE_ENUM,
     ...                          enum_group=ynu)
-    '''
+    """
     value = models.CharField(_(u"value"), db_index=True,
                              unique=True, max_length=50)
     group = models.ForeignKey(EnumGroup, verbose_name=_(u"group"),
@@ -81,7 +80,7 @@ class EnumValue(models.Model):
 
 
 class Attribute(models.Model):
-    '''
+    """
     Putting the **A** in *EAV*. This holds the attributes, or concepts.
     Examples of possible *Attributes*: color, height, weight,
     number of children, number of patients, has fever?, etc...
@@ -127,7 +126,7 @@ class Attribute(models.Model):
 
     .. warning:: Once an Attribute has been used by an entity, you can not
                  change it's datatype.
-    '''
+    """
 
     class Meta:
         ordering = ['name']
@@ -177,18 +176,18 @@ class Attribute(models.Model):
 
     objects = models.Manager()
     on_site = CurrentSiteManager()
-    
+
     #reference to Django model that this attribute is restricted to
     parent = models.ForeignKey(ContentType, null=True, blank=True)
-    
+
     def __init__(self, *args, **kwargs):
         parent = kwargs.get('parent', None)
         if parent and not isinstance(parent, ContentType):
             kwargs['parent'] = ContentType.objects.get_for_model(parent)
         return super(Attribute, self).__init__(*args, **kwargs)
-    
+
     def get_validators(self):
-        '''
+        """
         Returns the appropriate validator function from :mod:`~eav.validators`
         as a list (of length one) for the datatype.
 
@@ -196,7 +195,7 @@ class Attribute(models.Model):
            The reason it returns it as a list, is eventually we may want this
            method to look elsewhere for additional attribute specific
            validators to return as well as the default, built-in one.
-        '''
+        """
         DATATYPE_VALIDATORS = {
             'text': validate_text,
             'float': validate_float,
@@ -210,10 +209,10 @@ class Attribute(models.Model):
         return [validation_function]
 
     def validate_value(self, value):
-        '''
+        """
         Check *value* against the validators returned by
         :meth:`get_validators` for this attribute.
-        '''
+        """
         for validator in self.get_validators():
             validator(value)
         if self.datatype == self.TYPE_ENUM:
@@ -223,24 +222,24 @@ class Attribute(models.Model):
                                        {'enum': value, 'attr': self})
 
     def save(self, *args, **kwargs):
-        '''
+        """
         Saves the Attribute and auto-generates a slug field if one wasn't
         provided.
-        
+
         If parent provided is not already a ContentType, calculate this.  
         Yes, this means you can't add Attributes for the ContentType model.
-        '''
+        """
         if not self.slug:
             self.slug = EavSlugField.create_slug_from_name(self.name)
         self.full_clean()
         super(Attribute, self).save(*args, **kwargs)
 
     def clean(self):
-        '''
+        """
         Validates the attribute.  Will raise ``ValidationError`` if
         the attribute's datatype is *TYPE_ENUM* and enum_group is not set,
         or if the attribute is not *TYPE_ENUM* and the enum group is set.
-        '''
+        """
         if self.datatype == self.TYPE_ENUM and not self.enum_group:
             raise ValidationError(_(
                 u"You must set the choice group for multiple choice " \
@@ -252,16 +251,16 @@ class Attribute(models.Model):
                 u"attributes"))
 
     def get_choices(self):
-        '''
+        """
         Returns a query set of :class:`EnumValue` objects for this attribute.
         Returns None if the datatype of this attribute is not *TYPE_ENUM*.
-        '''
+        """
         if not self.datatype == Attribute.TYPE_ENUM:
             return None
         return self.enum_group.enums.all()
 
     def save_value(self, entity, value):
-        '''
+        """
         Called with *entity*, any django object registered with eav, and
         *value*, the :class:`Value` this attribute for *entity* should
         be set to.
@@ -272,7 +271,7 @@ class Attribute(models.Model):
         .. note::
            If *value* is None and a :class:`Value` object exists for this
             Attribute and *entity*, it will delete that :class:`Value` object.
-        '''
+        """
         try:
             value_obj = self.value_set.get(entity=entity, attribute=self)
         except Value.DoesNotExist:
@@ -281,7 +280,7 @@ class Attribute(models.Model):
         if value != value_obj.value:
             value_obj.value = value
             value_obj.save()
-            
+
     @classmethod
     def get_for_model(cls, model):
         ct = ContentType.objects.get_for_model(model)
@@ -289,15 +288,18 @@ class Attribute(models.Model):
 
     def __unicode__(self):
         return u"%s (%s)" % (self.name, self.get_datatype_display())
-    
+
+
 class PartitionedAttributeManager(models.Manager):
     def get_query_set(self):
         qs = super(PartitionedAttributeManager, self).get_query_set()
         if self.model.parent_model:
-            ctype = ContentType.objects.get_for_model(model=self.model.parent_model)
+            ctype = ContentType.objects.get_for_model(
+                model=self.model.parent_model)
             return qs.filter(parent=ctype)
         else:
             return qs
+
 
 class PartitionedAttribute(Attribute):
     """
@@ -305,15 +307,15 @@ class PartitionedAttribute(Attribute):
     Entities they can be applied to.
     """
     objects = PartitionedAttributeManager()
-    parent_model = None #this must be set in the derived class or this isn't actually partitioned
-    
+    # This must be set in the derived class or this isn't actually partitioned
+    parent_model = None  
+
     class Meta:
         proxy = True
-        
 
 
 class Value(models.Model):
-    '''
+    """
     Putting the **V** in *EAV*. This model stores the value for one particular
     :class:`Attribute` for some entity.
 
@@ -330,7 +332,7 @@ class Value(models.Model):
     ... slug='fav_drink')
     > Value.objects.create(entity=u, attribute=a, value_text='red bull')
     <Value: crazy_dev_user - Favorite Drink: "red bull">
-    '''
+    """
     entity = models.ForeignKey(Page)
 
     value_text = models.TextField(blank=True, null=True)
@@ -345,17 +347,17 @@ class Value(models.Model):
                                   verbose_name=_(u"attribute"))
 
     def save(self, *args, **kwargs):
-        '''
+        """
         Validate and save this value
-        '''
+        """
         self.full_clean()
         super(Value, self).save(*args, **kwargs)
 
     def clean(self):
-        '''
+        """
         Raises ``ValidationError`` if this value's attribute is *TYPE_ENUM*
         and value_enum is not a valid choice for this value's attribute.
-        '''
+        """
         if self.attribute.datatype == Attribute.TYPE_ENUM and \
            self.value_enum:
             if self.value_enum not in self.attribute.enum_group.enums.all():
@@ -365,15 +367,15 @@ class Value(models.Model):
                                          'attribute': self.attribute})
 
     def _get_value(self):
-        '''
+        """
         Return the python object this value is holding
-        '''
+        """
         return getattr(self, 'value_%s' % self.attribute.datatype)
 
     def _set_value(self, new_value):
-        '''
+        """
         Set the object this value is holding
-        '''
+        """
         setattr(self, 'value_%s' % self.attribute.datatype, new_value)
 
     value = property(_get_value, _set_value)
@@ -386,21 +388,22 @@ class Value(models.Model):
         verbose_name = _(u'value')
         verbose_name_plural = _(u'values')
 
+
 class Entity(object):
-    '''
+    """
     The helper class that will be attached to any entity registered with
     eav.
-    '''
+    """
 
     def __init__(self, instance):
-        '''
+        """
         Set self.model equal to the instance of the model that we're attached
         to.
-        '''
+        """
         self.model = instance
 
     def __getattr__(self, name):
-        '''
+        """
         Tha magic getattr helper.  This is called whenevery you do
         this_instance.<whatever>
 
@@ -409,7 +412,7 @@ class Entity(object):
         attribute slug. If there is one, it returns the value of the
         class:`Value` object, otherwise it hasn't been set, so it returns
         None.
-        '''
+        """
         if not name.startswith('_'):
             try:
                 attribute = self.get_attribute_by_slug(name)
@@ -424,10 +427,10 @@ class Entity(object):
         return getattr(super(Entity, self), name)
 
     def get_all_attributes(self):
-        '''
+        """
         Return a query set of all :class:`Attribute` objects that can be set
         for this entity.
-        '''
+        """
         # cache result
         if not hasattr(self, '_attributes_qs'):
             self._attributes_qs = self.model._eav_config_cls.get_attributes(
@@ -435,24 +438,25 @@ class Entity(object):
         return self._attributes_qs
 
     def get_attributes_and_values(self):
-        return dict( (v.attribute.slug, v.value) for v in self.get_values() )
+        return dict(
+            (v.attribute.slug, v.value) for v in self.get_values())
 
     def save(self):
-        '''
+        """
         Saves all the EAV values that have been set on this entity.
-        '''
+        """
         for attribute in self.get_all_attributes():
             if hasattr(self, attribute.slug):
                 attribute_value = getattr(self, attribute.slug)
                 attribute.save_value(self.model, attribute_value)
 
     def validate_attributes(self):
-        '''
+        """
         Called before :meth:`save`, first validate all the entity values to
         make sure they can be created / saved cleanly.
 
         Raise ``ValidationError`` if they can't be.
-        '''
+        """
         for attribute in self.get_all_attributes():
             value = getattr(self, attribute.slug, None)
             try:
@@ -463,15 +467,15 @@ class Entity(object):
                                          'err': e})
 
     def get_values(self):
-        '''
+        """
         Get all set :class:`Value` objects for self.model
-        '''
+        """
         return Value.objects.filter(entity=self.model).select_related()
 
     def get_all_attribute_slugs(self):
-        '''
+        """
         Returns a list of slugs for all attributes available to this entity.
-        '''
+        """
         # cache result
         if not hasattr(self, '_attribute_slugs'):
             self._attribute_slugs = self.get_all_attributes().values_list(
@@ -479,53 +483,53 @@ class Entity(object):
         return self._attribute_slugs
 
     def get_attribute_by_slug(self, slug):
-        '''
+        """
         Returns a single :class:`Attribute` with *slug*
-        '''
+        """
         return self.get_all_attributes().get(slug=slug)
 
     def get_value_by_attribute(self, attribute):
-        '''
+        """
         Returns a single :class:`Value` for *attribute*
-        '''
+        """
         return self.get_values().get(attribute=attribute)
 
     def __iter__(self):
-        '''
+        """
         Iterate over set eav values.
 
         This would allow you to do:
 
         >>> for i in m.eav: print i  # doctest: +SKIP
-        '''
+        """
         return iter(self.get_values())
 
     @staticmethod
     def post_save_handler(sender, *args, **kwargs):
-        '''
+        """
         Post save handler attached to self.model.  Calls :meth:`save` when
         the model instance we are attached to is saved.
-        '''
+        """
         instance = kwargs['instance']
         entity = getattr(instance, instance._eav_config_cls.eav_attr)
         entity.save()
 
     @staticmethod
     def pre_save_handler(sender, *args, **kwargs):
-        '''
+        """
         Pre save handler attached to self.model.  Called before the
         model instance we are attached to is saved. This allows us to call
         :meth:`validate_attributes` before the entity is saved.
-        '''
+        """
         instance = kwargs['instance']
         entity = getattr(kwargs['instance'], instance._eav_config_cls.eav_attr)
         entity.validate_attributes()
 
 if 'django_nose' in settings.INSTALLED_APPS:
-    '''
+    """
     The django_nose test runner won't automatically create our Patient model
     database table which is required for tests, unless we import it here.
 
     Please, someone tell me a better way to do this.
-    '''
+    """
     from .tests.models import Patient, Encounter

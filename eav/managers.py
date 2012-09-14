@@ -12,11 +12,11 @@ from .models import Attribute, Value
 
 
 def eav_filter(func):
-    '''
+    """
     Decorator used to wrap filter and exlclude methods.  Passes args through
     expand_q_filters and kwargs through expand_eav_filter. Returns the
     called function (filter or exclude)
-    '''
+    """
 
     @wraps(func)
     def wrapper(self, *args, **kwargs):
@@ -38,11 +38,11 @@ def eav_filter(func):
 
 
 def expand_q_filters(q, root_cls):
-    '''
+    """
     Takes a Q object and a model class.
     Recursivley passes each filter / value in the Q object tree leaf nodes
     through expand_eav_filter
-    '''
+    """
     new_children = []
     for qi in q.children:
         if type(qi) is tuple:
@@ -58,7 +58,7 @@ def expand_q_filters(q, root_cls):
 
 
 def expand_eav_filter(model_cls, key, value):
-    '''
+    """
     Accepts a model class and a key, value.
     Recurisively replaces any eav filter with a subquery.
 
@@ -71,7 +71,7 @@ def expand_eav_filter(model_cls, key, value):
 
         key = 'eav_values__in'
         value = Values.objects.filter(value_int=5, attribute__slug='height')
-    '''
+    """
     fields = key.split('__')
     config_cls = getattr(model_cls, '_eav_config_cls', None)
     if len(fields) > 1 and config_cls and \
@@ -101,39 +101,39 @@ def expand_eav_filter(model_cls, key, value):
 
 
 class EntityManager(models.Manager):
-    '''
+    """
     Our custom manager, overriding ``models.Manager``
-    '''
+    """
 
     @eav_filter
     def filter(self, *args, **kwargs):
-        '''
+        """
         Pass *args* and *kwargs* through :func:`eav_filter`, then pass to
         the ``models.Manager`` filter method.
-        '''
+        """
         return super(EntityManager, self).filter(*args, **kwargs).distinct()
 
     @eav_filter
     def exclude(self, *args, **kwargs):
-        '''
+        """
         Pass *args* and *kwargs* through :func:`eav_filter`, then pass to
         the ``models.Manager`` exclude method.
-        '''
+        """
         return super(EntityManager, self).exclude(*args, **kwargs).distinct()
 
     @eav_filter
     def get(self, *args, **kwargs):
-        '''
+        """
         Pass *args* and *kwargs* through :func:`eav_filter`, then pass to
         the ``models.Manager`` get method.
-        '''
+        """
         return super(EntityManager, self).get(*args, **kwargs)
 
     def create(self, **kwargs):
-        '''
+        """
         Parse eav attributes out of *kwargs*, then try to create and save
         the object, then assign and save it's eav attributes.
-        '''
+        """
         config_cls = getattr(self.model, '_eav_config_cls', None)
 
         if not config_cls or config_cls.manager_only:
@@ -157,9 +157,9 @@ class EntityManager(models.Manager):
         return obj
 
     def get_or_create(self, **kwargs):
-        '''
+        """
         Reproduces the behavior of get_or_create, eav friendly.
-        '''
+        """
         try:
             return self.get(**kwargs)
         except self.model.DoesNotExist:
@@ -175,7 +175,8 @@ class EntityManager(models.Manager):
 class EntityQuerySet(models.query.QuerySet):
     """
     Override basic QuerySet, for chained filter and exclude methods
-    For example: Patient.object.filter(name='Bob').filter(eav__country='Russia')
+    For example:
+        Patient.object.filter(name='Bob').filter(eav__country='Russia')
     """
     @eav_filter
     def filter(self, *args, **kwargs):

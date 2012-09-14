@@ -15,15 +15,16 @@ from .forms import BaseDynamicEntityForm
 class BaseEntityAdmin(ModelAdmin):
     form = BaseDynamicEntityForm
     attribute_class = None
-    
-    def render_change_form(self, request, context, add=False, change=False, form_url='', obj=None):
+
+    def render_change_form(self, request, context, add=False, change=False,
+            form_url='', obj=None):
         """
         Wrapper for ModelAdmin.render_change_form. Replaces standard static
-        AdminForm with an EAV-friendly one. The point is that our form generates
-        fields dynamically and fieldsets must be inferred from a prepared and
-        validated form instance, not just the form class. Django does not seem
-        to provide hooks for this purpose, so we simply wrap the view and
-        substitute some data.
+        AdminForm with an EAV-friendly one. The point is that our form
+        generates fields dynamically and fieldsets must be inferred from a
+        prepared and validated form instance, not just the form class. Django
+        does not seem to provide hooks for this purpose, so we simply wrap the
+        view and substitute some data.
         """
         form = context['adminform'].form
 
@@ -38,22 +39,21 @@ class BaseEntityAdmin(ModelAdmin):
         super_meth = super(BaseEntityAdmin, self).render_change_form
         return super_meth(request, context, add, change, form_url, obj)
 
-
     import django
-    if (1,4) > django.VERSION:
+    if (1, 4) > django.VERSION:
         def changelist_view(self, request, extra_context=None):
             """
-            Override of changelist_view to provide dynamic calculation of 
+            Override of changelist_view to provide dynamic calculation of
             list_display.  This will no longer be necessary after Django 1.4 -
             see django changeset 16340.
-            
+
             This may not be threadsafe.  Don't do anything with side effects.
             """
             if hasattr(self, 'get_list_display'):
                 self.list_display = self.get_list_display(request)
-            return super(BaseEntityAdmin, self).changelist_view(request, extra_context)
+            return super(BaseEntityAdmin, self).changelist_view(
+                request, extra_context)
 
-        
     def get_list_display(self, request):
         """
         Adds all attributes configured with display_in_list
@@ -65,13 +65,14 @@ class BaseEntityAdmin(ModelAdmin):
             func_name = "eav_%s" % attribute.slug
             if func_name in self.list_display:
                 continue
-            func = lambda x, attr=attribute: x.eav.get_value_by_attribute(attr).value
+            func = lambda x, attr=attribute: \
+                x.eav.get_value_by_attribute(attr).value
             func.short_description = attribute.name
             setattr(self.model, func_name, func)
             base_list_display.append(func_name)
         return base_list_display
-            
-        
+
+
 class BaseEntityInlineFormSet(BaseInlineFormSet):
     """
     An inline formset that correctly initializes EAV forms.
@@ -113,11 +114,12 @@ class BaseEntityInline(InlineModelAdmin):
 
         return [(None, {'fields': form.fields.keys()})]
 
+
 class AttributeAdmin(ModelAdmin):
     list_display = ('name', 'slug', 'datatype', 'description', 'site')
     list_filter = ['site']
-    
-    
+
+
 class PartitionedAttributeAdmin(AttributeAdmin):
     """
     Abstract base class for Admins of specific types of Attributes.
@@ -143,8 +145,10 @@ class PartitionedAttributeAdmin(AttributeAdmin):
         obj.parent = ctype
         obj.save()
 
+
 class EnumGroupAdmin(ModelAdmin):
     pass
+
 
 def register_admin():
     """
@@ -154,4 +158,3 @@ def register_admin():
     admin.site.register(Value)
     admin.site.register(EnumValue)
     admin.site.register(EnumGroup, EnumGroupAdmin)
-

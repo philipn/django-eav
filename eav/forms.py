@@ -7,13 +7,13 @@ Classes
 from copy import deepcopy
 
 from django.forms import BooleanField, CharField, DateTimeField, FloatField, \
-                         IntegerField, ModelForm, ChoiceField, ValidationError
+                         IntegerField, ModelForm, ChoiceField
 from django.contrib.admin.widgets import AdminSplitDateTime
 from django.utils.translation import ugettext_lazy as _
 
 
 class BaseDynamicEntityForm(ModelForm):
-    '''
+    """
     ModelForm for entity with support for EAV attributes. Form fields are
     created on the fly depending on Schema defined for given entity instance.
     If no schema is defined (i.e. the entity instance has not been saved yet),
@@ -21,7 +21,7 @@ class BaseDynamicEntityForm(ModelForm):
     retrieved and EAV fields dynamically added to the form, so when the
     validation is actually done, all EAV fields are present in it (unless
     Rubric is not defined).
-    '''
+    """
 
     FIELD_CLASSES = {
         'text': CharField,
@@ -74,7 +74,8 @@ class BaseDynamicEntityForm(ModelForm):
             self.fields[attribute.slug] = MappedField(**defaults)
 
             # fill initial data (if attribute was already defined)
-            if value and not datatype == attribute.TYPE_ENUM: #enum done above
+            # enum done above
+            if value and not datatype == attribute.TYPE_ENUM:
                 self.initial[attribute.slug] = value
 
     def save(self, commit=True):

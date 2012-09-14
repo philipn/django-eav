@@ -14,6 +14,7 @@ from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from django.core.exceptions import ValidationError
 
+
 class EavSlugField(models.SlugField):
     '''
     The slug field used by :class:`~eav.models.Attribute`
@@ -46,6 +47,7 @@ class EavSlugField(models.SlugField):
         # Remove non alphanumeric characters
         return re.sub('[^\w]', '', name)
 
+
 class EavDatatypeField(models.CharField):
     '''
     The datatype field used by :class:`~eav.models.Attribute`
@@ -58,7 +60,6 @@ class EavDatatypeField(models.CharField):
         :class:`~eav.models.Value` objects.
         '''
         super(EavDatatypeField, self).validate(value, instance)
-        from .models import Attribute
         if not instance.pk:
             return
         if instance.value_set.count():
