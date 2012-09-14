@@ -2,7 +2,7 @@
 This module contains a validator for each Attribute datatype.
 
 A validator is a callable that takes a value and raises a ``ValidationError``
-if it doesn’t meet some criteria. (see
+if it doesn't meet some criteria. (see
 `django validators <http://docs.djangoproject.com/en/dev/ref/validators/>`_)
 
 These validators are called by the
