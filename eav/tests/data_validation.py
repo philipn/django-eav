@@ -29,33 +29,6 @@ class DataValidation(TestCase):
     def tearDown(self):
         eav.unregister(Patient)
 
-    def test_required_field(self):
-        p = Patient(name='Bob')
-        p.eav.age = 5
-        p.save()
-
-        Attribute.objects.create(name='Weight', datatype=Attribute.TYPE_INT, required=True)
-        p.eav.age = 6
-        self.assertRaises(ValidationError, p.save)
-        p = Patient.objects.get(name='Bob')
-        self.assertEqual(p.eav.age, 5)
-        p.eav.weight = 23
-        p.save()
-        p = Patient.objects.get(name='Bob')
-        self.assertEqual(p.eav.weight, 23)
-
-    def test_create_required_field(self):
-        Attribute.objects.create(name='Weight', datatype=Attribute.TYPE_INT, required=True)
-        self.assertRaises(ValidationError,
-                          Patient.objects.create,
-                          name='Joe', eav__age=5)
-        self.assertEqual(Patient.objects.count(), 0)
-        self.assertEqual(Value.objects.count(), 0)
-
-        p = Patient.objects.create(name='Joe', eav__weight=2, eav__age=5)
-        self.assertEqual(Patient.objects.count(), 1)
-        self.assertEqual(Value.objects.count(), 2)
-
     def test_validation_error_create(self):
         self.assertRaises(ValidationError,
                           Patient.objects.create,

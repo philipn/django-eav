@@ -20,9 +20,8 @@ class EAVIndex(indexes.ModelSearchIndex):
         
         attribute_class = self.attribute_class or Attribute
         model_attributes = attribute_class.get_for_model(model)
-        searchable_attributes = model_attributes.filter(searchable=True)
 
-        for attr in searchable_attributes:
+        for attr in model_attributes:
             if attr.slug in self.fields:
                 continue
             if excludes and attr.slug in excludes:

@@ -196,15 +196,6 @@ class Attribute(models.Model):
     datatype = EavDatatypeField(_(u"data type"), max_length=6,
                                 choices=DATATYPE_CHOICES)
 
-    created = models.DateTimeField(_(u"created"), auto_now_add=True,
-                                   editable=False)
-
-    modified = models.DateTimeField(_(u"modified"), auto_now=True)
-
-    required = models.BooleanField(_(u"required"), default=False)
-    display_in_list = models.BooleanField(_(u"display in admin list view"), default=False)
-    searchable = models.BooleanField(_(u"Allow searching on field"), default=False)
-
     objects = models.Manager()
     on_site = CurrentSiteManager()
     
@@ -371,9 +362,6 @@ class Value(models.Model):
     value_enum = models.ForeignKey(EnumValue, blank=True, null=True,
                                    related_name='eav_values')
 
-    created = models.DateTimeField(_(u"created"), auto_now_add=True)
-    modified = models.DateTimeField(_(u"modified"), auto_now=True)
-
     attribute = models.ForeignKey(Attribute, db_index=True,
                                   verbose_name=_(u"attribute"))
 
@@ -488,18 +476,12 @@ class Entity(object):
         '''
         for attribute in self.get_all_attributes():
             value = getattr(self, attribute.slug, None)
-            if value is None:
-                if attribute.required:
-                    raise ValidationError(_(u"%(attr)s EAV field cannot " \
-                                            u"be blank") % \
-                                            {'attr': attribute.slug})
-            else:
-                try:
-                    attribute.validate_value(value)
-                except ValidationError, e:
-                    raise ValidationError(_(u"%(attr)s EAV field %(err)s") % \
-                                            {'attr': attribute.slug,
-                                             'err': e})
+            try:
+                attribute.validate_value(value)
+            except ValidationError, e:
+                raise ValidationError(_(u"%(attr)s EAV field %(err)s") % \
+                                        {'attr': attribute.slug,
+                                         'err': e})
 
     def get_values(self):
         '''
