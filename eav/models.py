@@ -17,7 +17,6 @@ from sapling.pages.models import Page
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
-from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.models import Site
 from django.contrib.sites.managers import CurrentSiteManager
 from django.conf import settings
@@ -317,6 +316,9 @@ class Value(models.Model):
     value_bool = models.NullBooleanField(blank=True, null=True)
     value_enum = models.ForeignKey(EnumValue, blank=True, null=True,
                                    related_name='eav_values')
+
+    should_display_value = models.BooleanField(blank=True, default=True,
+        help_text=_("Should this value be displayed?"))
 
     attribute = models.ForeignKey(Attribute, db_index=True,
                                   verbose_name=_(u"attribute"))
