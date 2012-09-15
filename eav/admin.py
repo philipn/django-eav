@@ -87,32 +87,6 @@ class AttributeAdmin(ModelAdmin):
     list_filter = ['site']
 
 
-class PartitionedAttributeAdmin(AttributeAdmin):
-    """
-    Abstract base class for Admins of specific types of Attributes.
-    Provides functionality for filtering based on the implementing class's
-    parent_model field.
-    """
-    exclude = ('parent',)
-
-    def queryset(self, request):
-        """
-        Instead of returning all Attributes, return only those
-        pertaining to a specific model, specified by subclass's parent_model.
-        """
-        qs = super(PartitionedAttributeAdmin, self).queryset(request)
-        ctype = ContentType.objects.get_for_model(self.parent_model)
-        return qs.filter(parent=ctype)
-
-    def save_model(self, request, obj, form, change):
-        """
-        Overrides default ModelAdmin behavior to set the parent model.
-        """
-        ctype = ContentType.objects.get_for_model(self.parent_model)
-        obj.parent = ctype
-        obj.save()
-
-
 class EnumGroupAdmin(ModelAdmin):
     pass
 

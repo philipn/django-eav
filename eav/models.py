@@ -271,23 +271,6 @@ class Attribute(models.Model):
         return u"%s (%s)" % (self.name, self.get_datatype_display())
 
 
-class PartitionedAttributeManager(models.Manager):
-    pass
-
-
-class PartitionedAttribute(Attribute):
-    """
-    A proxy model class to handle segregating types of Attributes by the
-    Entities they can be applied to.
-    """
-    objects = PartitionedAttributeManager()
-    # This must be set in the derived class or this isn't actually partitioned
-    parent_model = None
-
-    class Meta:
-        proxy = True
-
-
 class Value(models.Model):
     """
     Putting the **V** in *EAV*. This model stores the value for one particular

@@ -20,7 +20,6 @@ class EavConfig(object):
     manager_attr = 'objects'
     manager_only = False
     eav_attr = 'eav'
-    parent = None
 
     @classmethod
     def get_attributes(cls, entity=None):
@@ -38,7 +37,7 @@ class Registry(object):
     """
 
     @staticmethod
-    def register(model_cls, config_cls=None, filter_by_parent=False):
+    def register(model_cls, config_cls=None):
         """
         Registers *model_cls* with eav. You can pass an optional *config_cls*
         to override the EavConfig defaults.
@@ -52,9 +51,6 @@ class Registry(object):
         if config_cls is EavConfig or config_cls is None:
             config_cls = type("%sConfig" % model_cls.__name__,
                               (EavConfig,), {})
-
-        if filter_by_parent:
-            config_cls.parent = model_cls
 
         # set _eav_config_cls on the model so we can access it there
         setattr(model_cls, '_eav_config_cls', config_cls)
