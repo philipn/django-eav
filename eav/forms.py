@@ -29,9 +29,44 @@ Classes
 from copy import deepcopy
 
 from django.forms import BooleanField, CharField, DateTimeField, FloatField, \
-                         IntegerField, ModelForm, ChoiceField, ValidationError
+                         IntegerField, ModelForm, ChoiceField, \
+                         Field, ValidationError
+from django.forms import Widget
+from django.forms.models import ModelChoiceField
 from django.contrib.admin.widgets import AdminSplitDateTime
 from django.utils.translation import ugettext_lazy as _
+
+from models import PageLink
+
+
+def form_as_single_field(FormClass, instance, prefix):
+    class ModelFormWidget(Widget):
+        """ Returns a form for a FK'd instance as a single widget for display
+        in the parent form.
+        """
+        def render(self, name, value, attrs=None):
+            form = FormClass(instance=instance, prefix=prefix)
+            return '<table>' + form.as_table() + '</table>'
+
+        def value_from_datadict(self, data, files, name):
+            return FormClass(instance=instance, data=data, prefix=prefix)
+
+    class ModelField(Field):
+        widget = ModelFormWidget
+
+        def __init__(self, *args, **kwargs):
+            super(ModelField, self).__init__(*args, **kwargs)
+
+        def clean(self, value):
+            if value.errors:
+                raise ValidationError(value.errors[0])
+            return value.save(commit=False)
+
+    return ModelField()
+
+class PageLinkForm(ModelForm):
+    class Meta:
+        model = PageLink
 
 
 class BaseDynamicEntityForm(ModelForm):
@@ -52,6 +87,7 @@ class BaseDynamicEntityForm(ModelForm):
         'date': DateTimeField,
         'bool': BooleanField,
         'enum': ChoiceField,
+        'page': PageLinkForm,
     }
 
     def __init__(self, data=None, *args, **kwargs):
@@ -64,11 +100,21 @@ class BaseDynamicEntityForm(ModelForm):
         # reset form fields
         self.fields = deepcopy(self.base_fields)
 
-        for attribute in self.entity.get_all_attributes():
-            if not hasattr(self.entity, attribute.slug):
-                continue
-            value = getattr(self.entity, attribute.slug)
-
+        for v in self.entity.get_values():
+            value = v.value
+            attribute = v.attribute
+            self.create_form_fields_for_attribute(attribute, value)
+    
+    def create_form_fields_for_attribute(self, attribute, value):
+        datatype = attribute.datatype
+        FieldOrForm = self.FIELD_CLASSES[datatype]
+        is_form = hasattr(FieldOrForm, 'as_table')
+        if is_form:
+            # Assume this is for a FK'd instance, construct its form
+            self.fields[attribute.slug] = form_as_single_field(FieldOrForm,
+                                        instance=value, prefix=attribute.slug)
+        else:
+            # Just a regular single field
             defaults = {
                 'label': attribute.name.capitalize(),
                 'required': attribute.required,
@@ -76,7 +122,6 @@ class BaseDynamicEntityForm(ModelForm):
                 'validators': attribute.get_validators(),
             }
 
-            datatype = attribute.datatype
             if datatype == attribute.TYPE_ENUM:
                 # for enum enough standard validator
                 defaults['validators'] = []
@@ -93,13 +138,12 @@ class BaseDynamicEntityForm(ModelForm):
             elif datatype == attribute.TYPE_DATE:
                 defaults.update({'widget': AdminSplitDateTime})
             elif datatype == attribute.TYPE_OBJECT:
-                continue
+                return
 
-            MappedField = self.FIELD_CLASSES[datatype]
-            self.fields[attribute.slug] = MappedField(**defaults)
+            self.fields[attribute.slug] = FieldOrForm(**defaults)
 
             # fill initial data (if attribute was already defined)
-            if value and not datatype == attribute.TYPE_ENUM: #enum done above
+            if value and not datatype == attribute.TYPE_ENUM: #enum  done above
                 self.initial[attribute.slug] = value
 
     def save(self, commit=True):
@@ -128,6 +172,15 @@ class BaseDynamicEntityForm(ModelForm):
                     value = attribute.enum_group.enums.get(pk=value)
                 else:
                     value = None
+#            if attribute.datatype == attribute.TYPE_PAGE:
+#                page = instance.<page field thign> (get or create)
+#                setattr(page, 'pagename'', value)
+#                
+#                # the above should be some kind of callable for each type
+#                
+#                # you have a model, 
+            elif attribute.datatype == attribute.TYPE_PAGELINK:
+                value.save()
 
             setattr(self.entity, attribute.slug, value)
 

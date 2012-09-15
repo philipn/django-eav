@@ -107,3 +107,9 @@ def validate_enum(value):
         raise ValidationError(_(u"Must be an EnumValue model object instance"))
     if not value.pk:
         raise ValidationError(_(u"EnumValue has not been saved yet"))
+
+def validate_page(value):
+    '''
+    Doesn't do anything, no validation needed
+    '''
+    pass

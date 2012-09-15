@@ -99,6 +99,10 @@ class EnumValue(models.Model):
         verbose_name_plural = _(u'enum values')
 
 
+class PageLink(models.Model):
+    page_name = models.CharField(max_length=255, blank=True, null=True)
+
+
 class Attribute(models.Model):
     '''
     Putting the **A** in *EAV*. This holds the attributes, or concepts.
@@ -117,7 +121,7 @@ class Attribute(models.Model):
        to save or create any entity object for which this attribute applies,
        without first setting this EAV attribute.
 
-    There are 7 possible values for datatype:
+    There are 8 possible values for datatype:
 
         * int (TYPE_INT)
         * float (TYPE_FLOAT)
@@ -126,6 +130,7 @@ class Attribute(models.Model):
         * bool (TYPE_BOOLEAN)
         * object (TYPE_OBJECT)
         * enum (TYPE_ENUM)
+        * pagelink (TYPE_PAGELINK)
 
     Examples:
 
@@ -162,6 +167,7 @@ class Attribute(models.Model):
     TYPE_BOOLEAN = 'bool'
     TYPE_OBJECT = 'object'
     TYPE_ENUM = 'enum'
+    TYPE_PAGELINK = 'page'
 
     DATATYPE_CHOICES = (
         (TYPE_TEXT, _(u"Text")),
@@ -171,6 +177,7 @@ class Attribute(models.Model):
         (TYPE_BOOLEAN, _(u"True / False")),
         (TYPE_OBJECT, _(u"Django Object")),
         (TYPE_ENUM, _(u"Multiple Choice")),
+        (TYPE_PAGELINK, _(u"Page")),
     )
 
     name = models.CharField(_(u"name"), max_length=100,
@@ -236,6 +243,7 @@ class Attribute(models.Model):
             'bool': validate_bool,
             'object': validate_object,
             'enum': validate_enum,
+            'page': validate_page,
         }
 
         validation_function = DATATYPE_VALIDATORS[self.datatype]
@@ -387,6 +395,8 @@ class Value(models.Model):
                                          related_name='value_values')
     value_object = generic.GenericForeignKey(ct_field='generic_value_ct',
                                              fk_field='generic_value_id')
+    value_page = models.OneToOneField(PageLink, blank=True, null=True,
+                                      related_name='eav_value')
 
     created = models.DateTimeField(_(u"created"), auto_now_add=True)
     modified = models.DateTimeField(_(u"modified"), auto_now=True)
