@@ -103,6 +103,38 @@ class PageLink(models.Model):
     page_name = models.CharField(max_length=255, blank=True, null=True)
 
 
+DAYS_OF_WEEK = (
+    ('1', _(u'Sunday')),
+    ('2', _(u'Monday')),
+    ('3', _(u'Tuesday')),
+    ('4', _(u'Wednesday')),
+    ('5', _(u'Thursday')),
+    ('6', _(u'Friday')),
+    ('7', _(u'Saturday')), 
+)
+
+
+class WeeklySchedule(models.Model):
+    """
+    Has many WeeklyTimeBlock 
+    """
+    pass
+
+
+class WeeklyTimeBlock(models.Model):
+    week_day = models.CharField(max_length=1, choices=DAYS_OF_WEEK,
+                                blank=False, null=False)
+    start_time = models.TimeField(blank=False, null=False)
+    end_time = models.TimeField(blank=False, null=False)
+
+    schedule = models.ForeignKey(WeeklySchedule, blank=False, null=False,
+                                 related_name='time_blocks')
+
+    def clean(self):
+        if self.start_time >= self.end_time:
+            raise ValidationError('Starting time should be before ending time')
+
+
 class Attribute(models.Model):
     '''
     Putting the **A** in *EAV*. This holds the attributes, or concepts.
@@ -168,6 +200,7 @@ class Attribute(models.Model):
     TYPE_OBJECT = 'object'
     TYPE_ENUM = 'enum'
     TYPE_PAGELINK = 'page'
+    TYPE_SCHEDULE = 'schedule'
 
     DATATYPE_CHOICES = (
         (TYPE_TEXT, _(u"Text")),
@@ -178,6 +211,7 @@ class Attribute(models.Model):
         (TYPE_OBJECT, _(u"Django Object")),
         (TYPE_ENUM, _(u"Multiple Choice")),
         (TYPE_PAGELINK, _(u"Page")),
+        (TYPE_SCHEDULE, _(u"Weekly Schedule")),
     )
 
     name = models.CharField(_(u"name"), max_length=100,
@@ -201,7 +235,7 @@ class Attribute(models.Model):
     def help_text(self):
         return self.description
 
-    datatype = EavDatatypeField(_(u"data type"), max_length=6,
+    datatype = EavDatatypeField(_(u"data type"), max_length=8,
                                 choices=DATATYPE_CHOICES)
 
     created = models.DateTimeField(_(u"created"), auto_now_add=True,
@@ -397,6 +431,8 @@ class Value(models.Model):
                                              fk_field='generic_value_id')
     value_page = models.OneToOneField(PageLink, blank=True, null=True,
                                       related_name='eav_value')
+    value_schedule = models.OneToOneField(WeeklySchedule, blank=True,
+                                          null=True, related_name='eav_value')
 
     created = models.DateTimeField(_(u"created"), auto_now_add=True)
     modified = models.DateTimeField(_(u"modified"), auto_now=True)
@@ -505,6 +541,9 @@ class Entity(object):
         for attribute in self.get_all_attributes():
             if hasattr(self, attribute.slug):
                 attribute_value = getattr(self, attribute.slug)
+                if attribute.datatype in [attribute.TYPE_PAGELINK,
+                                          attribute.TYPE_SCHEDULE]:
+                    attribute_value = attribute_value.save()
                 attribute.save_value(self.model, attribute_value)
 
     def validate_attributes(self):

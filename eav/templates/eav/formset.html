@@ -1,0 +1,6 @@
+{{ formset.management_form }}
+{% for form in formset %}
+<div class="{{ css_class }}">
+    {{ form.as_p }}
+</div>
+{% endfor %}

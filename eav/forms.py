@@ -26,17 +26,23 @@ The forms used for admin integration
 Classes
 -------
 '''
+import re
 from copy import deepcopy
 
 from django.forms import BooleanField, CharField, DateTimeField, FloatField, \
                          IntegerField, ModelForm, ChoiceField, \
                          Field, ValidationError
 from django.forms import Widget
-from django.forms.models import ModelChoiceField
+from django.forms.models import ModelChoiceField, inlineformset_factory
 from django.contrib.admin.widgets import AdminSplitDateTime
 from django.utils.translation import ugettext_lazy as _
+from django.template.loader import render_to_string
 
-from models import PageLink
+from models import PageLink, WeeklySchedule, WeeklyTimeBlock
+
+
+# convert model's name to lowercase with underscores: MyThing -> my_thing
+get_css_class = lambda class_name: re.sub('(((?<=[a-z])[A-Z])|([A-Z](?![A-Z]|$)))', ' \\1', class_name).lower().strip().replace(' ', '_')
 
 
 def form_as_single_field(FormClass, instance, prefix):
@@ -46,7 +52,13 @@ def form_as_single_field(FormClass, instance, prefix):
         """
         def render(self, name, value, attrs=None):
             form = FormClass(instance=instance, prefix=prefix)
-            return '<table>' + form.as_table() + '</table>'
+            is_formset = hasattr(form, 'forms')
+            if is_formset:
+                d = {'formset': form,
+                     'css_class': get_css_class(FormClass.model.__name__)
+                     }
+                return render_to_string('eav/formset.html', d)
+            return form.as_p()
 
         def value_from_datadict(self, data, files, name):
             return FormClass(instance=instance, data=data, prefix=prefix)
@@ -54,19 +66,31 @@ def form_as_single_field(FormClass, instance, prefix):
     class ModelField(Field):
         widget = ModelFormWidget
 
-        def __init__(self, *args, **kwargs):
-            super(ModelField, self).__init__(*args, **kwargs)
-
         def clean(self, value):
-            if value.errors:
-                raise ValidationError(value.errors[0])
-            return value.save(commit=False)
+            if not value.is_valid():
+                raise ValidationError(self.error_messages['invalid'])
+            return value
 
     return ModelField()
+
 
 class PageLinkForm(ModelForm):
     class Meta:
         model = PageLink
+
+
+WeeklyTimeBlockFormSet = inlineformset_factory(WeeklySchedule, WeeklyTimeBlock,
+                                               extra=7)
+
+
+class WeeklyScheduleForm(WeeklyTimeBlockFormSet):
+    def save(self, commit=True):
+        self.instance.save()
+        super(WeeklyScheduleForm, self).save(commit)
+        return self.instance
+
+    def as_p(self):
+        return 
 
 
 class BaseDynamicEntityForm(ModelForm):
@@ -88,6 +112,7 @@ class BaseDynamicEntityForm(ModelForm):
         'bool': BooleanField,
         'enum': ChoiceField,
         'page': PageLinkForm,
+        'schedule': WeeklyScheduleForm,
     }
 
     def __init__(self, data=None, *args, **kwargs):
@@ -172,15 +197,6 @@ class BaseDynamicEntityForm(ModelForm):
                     value = attribute.enum_group.enums.get(pk=value)
                 else:
                     value = None
-#            if attribute.datatype == attribute.TYPE_PAGE:
-#                page = instance.<page field thign> (get or create)
-#                setattr(page, 'pagename'', value)
-#                
-#                # the above should be some kind of callable for each type
-#                
-#                # you have a model, 
-            elif attribute.datatype == attribute.TYPE_PAGELINK:
-                value.save()
 
             setattr(self.entity, attribute.slug, value)
 
