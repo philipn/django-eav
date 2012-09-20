@@ -41,6 +41,7 @@ from django.contrib.contenttypes import generic
 from django.contrib.sites.models import Site
 from django.contrib.sites.managers import CurrentSiteManager
 from django.conf import settings
+from django.forms.models import BaseModelForm, BaseModelFormSet
 
 from .validators import *
 from .fields import EavSlugField, EavDatatypeField
@@ -358,9 +359,11 @@ class Attribute(models.Model):
                                              attribute=self)
 
         if value != value_obj.value:
+            if isinstance(value, (BaseModelForm, BaseModelFormSet)):
+                value = value.save()
             value_obj.value = value
             value_obj.save()
-            
+
     @classmethod
     def get_for_model(cls, model):
         ct = ContentType.objects.get_for_model(model)
@@ -541,9 +544,6 @@ class Entity(object):
         for attribute in self.get_all_attributes():
             if hasattr(self, attribute.slug):
                 attribute_value = getattr(self, attribute.slug)
-                if attribute.datatype in [attribute.TYPE_PAGELINK,
-                                          attribute.TYPE_SCHEDULE]:
-                    attribute_value = attribute_value.save()
                 attribute.save_value(self.model, attribute_value)
 
     def validate_attributes(self):

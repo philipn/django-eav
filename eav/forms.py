@@ -89,9 +89,6 @@ class WeeklyScheduleForm(WeeklyTimeBlockFormSet):
         super(WeeklyScheduleForm, self).save(commit)
         return self.instance
 
-    def as_p(self):
-        return 
-
 
 class BaseDynamicEntityForm(ModelForm):
     '''
