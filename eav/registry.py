@@ -67,7 +67,8 @@ class Registry(object):
     '''
 
     @staticmethod
-    def register(model_cls, config_cls=None, filter_by_parent=False):
+    def register(model_cls, value_cls=None, config_cls=None,
+                 filter_by_parent=False):
         '''
         Registers *model_cls* with eav. You can pass an optional *config_cls*
         to override the EavConfig defaults.
@@ -84,9 +85,11 @@ class Registry(object):
 
         if filter_by_parent:
             config_cls.parent = model_cls
-        
+
         # set _eav_config_cls on the model so we can access it there
         setattr(model_cls, '_eav_config_cls', config_cls)
+
+        setattr(model_cls, '_eav_value_cls', value_cls or Value)
 
         reg = Registry(model_cls)
         reg._register_self()
@@ -115,11 +118,12 @@ class Registry(object):
         config_cls = instance.__class__._eav_config_cls
         setattr(instance, config_cls.eav_attr, Entity(instance))
 
-    def __init__(self, model_cls):
+    def __init__(self, model_cls, value_cls):
         '''
         Set the *model_cls* and its *config_cls*
         '''
         self.model_cls = model_cls
+        self.value_cls = value_cls
         self.config_cls = model_cls._eav_config_cls
 
     def _attach_manager(self):
@@ -196,7 +200,8 @@ class Registry(object):
 
         if not self.config_cls.manager_only:
             self._attach_signals()
-            self._attach_generic_relation()
+            if self.value_cls is Value:
+                self._attach_generic_relation()
 
     def _unregister_self(self):
         '''
@@ -206,4 +211,5 @@ class Registry(object):
 
         if not self.config_cls.manager_only:
             self._detach_signals()
-            self._detach_generic_relation()
+            if self.value_cls is Value:
+                self._detach_generic_relation()

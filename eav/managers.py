@@ -95,6 +95,7 @@ def expand_eav_filter(model_cls, key, value):
     '''
     fields = key.split('__')
     config_cls = getattr(model_cls, '_eav_config_cls', None)
+    value_cls = getattr(model_cls, '_eav_value_cls')
     if len(fields) > 1 and config_cls and \
        fields[0] == config_cls.eav_attr:
         slug = fields[1]
@@ -104,7 +105,7 @@ def expand_eav_filter(model_cls, key, value):
         lookup = '__%s' % fields[2] if len(fields) > 2 else ''
         kwargs = {str('value_%s%s' % (datatype, lookup)): value,
                   'attribute__slug': slug}
-        value = Value.objects.filter(**kwargs)
+        value = value_cls.objects.filter(**kwargs)
 
         return '%s__in' % gr_name, value
 

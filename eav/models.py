@@ -236,8 +236,7 @@ class Attribute(models.Model):
     def help_text(self):
         return self.description
 
-    datatype = EavDatatypeField(_(u"data type"), max_length=8,
-                                choices=DATATYPE_CHOICES)
+    datatype = EavDatatypeField(_(u"data type"), max_length=8)
 
     created = models.DateTimeField(_(u"created"), auto_now_add=True,
                                    editable=False)
@@ -391,33 +390,21 @@ class PartitionedAttribute(Attribute):
     
     class Meta:
         proxy = True
-        
 
 
-class Value(models.Model):
-    '''
-    Putting the **V** in *EAV*. This model stores the value for one particular
-    :class:`Attribute` for some entity.
+class BaseValue(models.Model):
+    """
+    Abstract model for building values. To add custom value types, subclass
+    this, add an "entity" field that is a ForeignKey pointing at your entity
+    model, define your custom types and register it like this:
+        class PageValue(BaseValue"):
+            entity = models.ForeignKey(Page, blank=False, null=False)
+            value_author = models.ForeignKey(User, blank=True, null=True)
 
-    As with most EAV implementations, most of the columns of this model will
-    be blank, as onle one *value_* field will be used.
-
-    Example:
-
-    >>> import eav
-    >>> from django.contrib.auth.models import User
-    >>> eav.register(User)
-    >>> u = User.objects.create(username='crazy_dev_user', email='dev@dev.com')
-    >>> a = Attribute.objects.create(name='Favorite Drink', datatype='text',
-    ... slug='fav_drink')
-    > Value.objects.create(entity=u, attribute=a, value_text='red bull')
-    <Value: crazy_dev_user - Favorite Drink: "red bull">
-    '''
-
-    entity_ct = models.ForeignKey(ContentType, related_name='value_entities')
-    entity_id = models.IntegerField()
-    entity = generic.GenericForeignKey(ct_field='entity_ct',
-                                       fk_field='entity_id')
+        eav.register(Page, PageValue)
+    """
+    class Meta:
+        abstract = True
 
     value_text = models.TextField(blank=True, null=True)
     value_float = models.FloatField(blank=True, null=True)
@@ -432,10 +419,6 @@ class Value(models.Model):
                                          related_name='value_values')
     value_object = generic.GenericForeignKey(ct_field='generic_value_ct',
                                              fk_field='generic_value_id')
-    value_page = models.OneToOneField(PageLink, blank=True, null=True,
-                                      related_name='eav_value')
-    value_schedule = models.OneToOneField(WeeklySchedule, blank=True,
-                                          null=True, related_name='eav_value')
 
     created = models.DateTimeField(_(u"created"), auto_now_add=True)
     modified = models.DateTimeField(_(u"modified"), auto_now=True)
@@ -484,6 +467,18 @@ class Value(models.Model):
     class Meta:
         verbose_name = _(u'value')
         verbose_name_plural = _(u'values')
+
+
+class Value(BaseValue):
+    '''
+    Default implementation that supports any of the simple built-in attribute
+    types and can be used with any entity type.
+    '''
+    entity_ct = models.ForeignKey(ContentType, related_name='value_entities')
+    entity_id = models.IntegerField()
+    entity = generic.GenericForeignKey(ct_field='entity_ct',
+                                       fk_field='entity_id')
+
 
 class Entity(object):
     '''
