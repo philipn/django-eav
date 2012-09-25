@@ -100,42 +100,6 @@ class EnumValue(models.Model):
         verbose_name_plural = _(u'enum values')
 
 
-class PageLink(models.Model):
-    page_name = models.CharField(max_length=255, blank=True, null=True)
-
-
-DAYS_OF_WEEK = (
-    ('1', _(u'Sunday')),
-    ('2', _(u'Monday')),
-    ('3', _(u'Tuesday')),
-    ('4', _(u'Wednesday')),
-    ('5', _(u'Thursday')),
-    ('6', _(u'Friday')),
-    ('7', _(u'Saturday')), 
-)
-
-
-class WeeklySchedule(models.Model):
-    """
-    Has many WeeklyTimeBlock 
-    """
-    pass
-
-
-class WeeklyTimeBlock(models.Model):
-    week_day = models.CharField(max_length=1, choices=DAYS_OF_WEEK,
-                                blank=False, null=False)
-    start_time = models.TimeField(blank=False, null=False)
-    end_time = models.TimeField(blank=False, null=False)
-
-    schedule = models.ForeignKey(WeeklySchedule, blank=False, null=False,
-                                 related_name='time_blocks')
-
-    def clean(self):
-        if self.start_time >= self.end_time:
-            raise ValidationError('Starting time should be before ending time')
-
-
 class Attribute(models.Model):
     '''
     Putting the **A** in *EAV*. This holds the attributes, or concepts.
@@ -163,7 +127,6 @@ class Attribute(models.Model):
         * bool (TYPE_BOOLEAN)
         * object (TYPE_OBJECT)
         * enum (TYPE_ENUM)
-        * pagelink (TYPE_PAGELINK)
 
     Examples:
 
@@ -200,8 +163,6 @@ class Attribute(models.Model):
     TYPE_BOOLEAN = 'bool'
     TYPE_OBJECT = 'object'
     TYPE_ENUM = 'enum'
-    TYPE_PAGELINK = 'page'
-    TYPE_SCHEDULE = 'schedule'
 
     DATATYPE_CHOICES = (
         (TYPE_TEXT, _(u"Text")),
@@ -211,8 +172,6 @@ class Attribute(models.Model):
         (TYPE_BOOLEAN, _(u"True / False")),
         (TYPE_OBJECT, _(u"Django Object")),
         (TYPE_ENUM, _(u"Multiple Choice")),
-        (TYPE_PAGELINK, _(u"Page")),
-        (TYPE_SCHEDULE, _(u"Weekly Schedule")),
     )
 
     name = models.CharField(_(u"name"), max_length=100,
@@ -390,6 +349,7 @@ class PartitionedAttribute(Attribute):
     
     class Meta:
         proxy = True
+        
 
 
 class BaseValue(models.Model):
@@ -403,20 +363,17 @@ class BaseValue(models.Model):
 
         eav.register(Page, PageValue)
     """
-    class Meta:
-        abstract = True
-
     value_text = models.TextField(blank=True, null=True)
     value_float = models.FloatField(blank=True, null=True)
     value_int = models.IntegerField(blank=True, null=True)
     value_date = models.DateTimeField(blank=True, null=True)
     value_bool = models.NullBooleanField(blank=True, null=True)
     value_enum = models.ForeignKey(EnumValue, blank=True, null=True,
-                                   related_name='eav_values')
+                                   related_name='eav_%(class)ss')
 
     generic_value_id = models.IntegerField(blank=True, null=True)
     generic_value_ct = models.ForeignKey(ContentType, blank=True, null=True,
-                                         related_name='value_values')
+                                         related_name='%(class)s_values')
     value_object = generic.GenericForeignKey(ct_field='generic_value_ct',
                                              fk_field='generic_value_id')
 
@@ -465,6 +422,7 @@ class BaseValue(models.Model):
                                      self.value)
 
     class Meta:
+        abstract = True
         verbose_name = _(u'value')
         verbose_name_plural = _(u'values')
 

@@ -91,7 +91,7 @@ class Registry(object):
 
         setattr(model_cls, '_eav_value_cls', value_cls or Value)
 
-        reg = Registry(model_cls)
+        reg = Registry(model_cls, value_cls)
         reg._register_self()
 
     @staticmethod
@@ -104,10 +104,11 @@ class Registry(object):
         '''
         if not getattr(model_cls, '_eav_config_cls', None):
             return
-        reg = Registry(model_cls)
+        reg = Registry(model_cls, value_cls)
         reg._unregister_self()
 
         delattr(model_cls, '_eav_config_cls')
+        delattr(model_cls, '_eav_value_cls')
 
     @staticmethod
     def attach_eav_attr(sender, *args, **kwargs):
@@ -192,6 +193,23 @@ class Registry(object):
 
         delattr(self.model_cls, gen_rel_field)
 
+    def _alias_entity_related_name(self):
+        '''
+        When working with a custom Value that has a real ForeignKey entity
+        field, alias the entity's related name so it can be standard.
+        '''
+        gen_rel_field = self.config_cls.generic_relation_attr.lower()
+        related_name = self.value_cls.entity.field.related_query_name()
+
+        def get_eav_value(cls):
+            return getattr(cls, related_name)
+
+        setattr(self.model_cls, gen_rel_field, property(get_eav_value))
+
+    def _unalias_entity_related_name(self):
+        gen_rel_field = self.config_cls.generic_relation_attr.lower()
+        delattr(self.model_cls, gen_rel_field)
+
     def _register_self(self):
         '''
         Call the necessary registration methods
@@ -200,8 +218,10 @@ class Registry(object):
 
         if not self.config_cls.manager_only:
             self._attach_signals()
-            if self.value_cls is Value:
+            if not self.value_cls:
                 self._attach_generic_relation()
+            else:
+                self._alias_entity_related_name()
 
     def _unregister_self(self):
         '''
@@ -211,5 +231,7 @@ class Registry(object):
 
         if not self.config_cls.manager_only:
             self._detach_signals()
-            if self.value_cls is Value:
+            if not self.value_cls:
                 self._detach_generic_relation()
+            else:
+                self._unalias_entity_related_name()

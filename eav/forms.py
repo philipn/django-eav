@@ -38,8 +38,6 @@ from django.contrib.admin.widgets import AdminSplitDateTime
 from django.utils.translation import ugettext_lazy as _
 from django.template.loader import render_to_string
 
-from models import PageLink, WeeklySchedule, WeeklyTimeBlock
-
 
 # convert model's name to lowercase with underscores: MyThing -> my_thing
 get_css_class = lambda class_name: re.sub('(((?<=[a-z])[A-Z])|([A-Z](?![A-Z]|$)))', ' \\1', class_name).lower().strip().replace(' ', '_')
@@ -74,22 +72,6 @@ def form_as_single_field(FormClass, instance, prefix):
     return ModelField()
 
 
-class PageLinkForm(ModelForm):
-    class Meta:
-        model = PageLink
-
-
-WeeklyTimeBlockFormSet = inlineformset_factory(WeeklySchedule, WeeklyTimeBlock,
-                                               extra=7)
-
-
-class WeeklyScheduleForm(WeeklyTimeBlockFormSet):
-    def save(self, commit=True):
-        self.instance.save()
-        super(WeeklyScheduleForm, self).save(commit)
-        return self.instance
-
-
 class BaseDynamicEntityForm(ModelForm):
     '''
     ModelForm for entity with support for EAV attributes. Form fields are
@@ -108,8 +90,6 @@ class BaseDynamicEntityForm(ModelForm):
         'date': DateTimeField,
         'bool': BooleanField,
         'enum': ChoiceField,
-        'page': PageLinkForm,
-        'schedule': WeeklyScheduleForm,
     }
 
     def __init__(self, data=None, *args, **kwargs):
