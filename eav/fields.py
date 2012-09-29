@@ -38,7 +38,7 @@ from django.core.exceptions import ValidationError
 
 class EavSlugField(models.SlugField):
     '''
-    The slug field used by :class:`~eav.models.Attribute`
+    The slug field used by :class:`~eav.models.BaseAttribute`
     '''
 
     def validate(self, value, instance):
@@ -70,22 +70,23 @@ class EavSlugField(models.SlugField):
 
 class EavDatatypeField(models.CharField):
     '''
-    The datatype field used by :class:`~eav.models.Attribute`
+    The datatype field used by :class:`~eav.models.BaseAttribute`
     '''
 
     def validate(self, value, instance):
         '''
         Raise ``ValidationError`` if they try to change the datatype of an
-        :class:`~eav.models.Attribute` that is already used by
+        :class:`~eav.models.BaseAttribute` that is already used by
         :class:`~eav.models.Value` objects.
         '''
         super(EavDatatypeField, self).validate(value, instance)
-        from .models import Attribute
         if not instance.pk:
             return
         if instance.value_set.count():
             raise ValidationError(_(u"You cannot change the datatype of an "
                                     u"attribute that is already in use."))
+
+
 
 try:
     from south.modelsinspector import add_introspection_rules

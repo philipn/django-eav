@@ -26,10 +26,9 @@ def get_version():
 
 __version__ = get_version()
 
-def register(model_cls, value_cls=None, config_cls=None,
-             filter_by_parent=False):
+def register(model_cls, value_cls=None, config_cls=None):
     from registry import Registry
-    Registry.register(model_cls, value_cls, config_cls, filter_by_parent)
+    Registry.register(model_cls, value_cls, config_cls)
 
 def unregister(model_cls):
     from registry import Registry

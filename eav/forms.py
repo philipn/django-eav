@@ -106,10 +106,16 @@ class BaseDynamicEntityForm(ModelForm):
             value = v.value
             attribute = v.attribute
             self.create_form_fields_for_attribute(attribute, value)
-    
+
+    def get_field_class_for_type(self, type):
+        custom_fields = getattr(self, 'CUSTOM_FIELD_CLASSES', {})
+        if type in custom_fields:
+            return custom_fields[type]
+        return self.FIELD_CLASSES[type]
+
     def create_form_fields_for_attribute(self, attribute, value):
         datatype = attribute.datatype
-        FieldOrForm = self.FIELD_CLASSES[datatype]
+        FieldOrForm = self.get_field_class_for_type(datatype)
         is_form = hasattr(FieldOrForm, 'as_table')
         if is_form:
             # Assume this is for a FK'd instance, construct its form
@@ -139,8 +145,6 @@ class BaseDynamicEntityForm(ModelForm):
 
             elif datatype == attribute.TYPE_DATE:
                 defaults.update({'widget': AdminSplitDateTime})
-            elif datatype == attribute.TYPE_OBJECT:
-                return
 
             self.fields[attribute.slug] = FieldOrForm(**defaults)
 

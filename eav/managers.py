@@ -29,8 +29,6 @@ from functools import wraps
 
 from django.db import models
 
-from .models import Attribute, Value
-
 
 def eav_filter(func):
     '''
@@ -95,12 +93,12 @@ def expand_eav_filter(model_cls, key, value):
     '''
     fields = key.split('__')
     config_cls = getattr(model_cls, '_eav_config_cls', None)
-    value_cls = getattr(model_cls, '_eav_value_cls')
+    value_cls = getattr(config_cls, 'value_cls', None)
     if len(fields) > 1 and config_cls and \
        fields[0] == config_cls.eav_attr:
         slug = fields[1]
-        gr_name = config_cls.generic_relation_attr
-        datatype = Attribute.objects.get(slug=slug).datatype
+        gr_name = config_cls.eav_relation_attr
+        datatype = config_cls.attribute_cls.objects.get(slug=slug).datatype
 
         lookup = '__%s' % fields[2] if len(fields) > 2 else ''
         kwargs = {str('value_%s%s' % (datatype, lookup)): value,

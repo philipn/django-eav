@@ -20,15 +20,15 @@
 **********
 validators
 **********
-This module contains a validator for each Attribute datatype.
+This module contains a validator for each BaseAttribute datatype.
 
 A validator is a callable that takes a value and raises a ``ValidationError``
 if it doesn’t meet some criteria. (see
 `django validators <http://docs.djangoproject.com/en/dev/ref/validators/>`_)
 
 These validators are called by the
-:meth:`~eav.models.Attribute.validate_value` method in the
-:class:`~eav.models.Attribute` model.
+:meth:`~eav.models.BaseAttribute.validate_value` method in the
+:class:`~eav.models.BaseAttribute` model.
 
 Functions
 ---------
@@ -86,17 +86,6 @@ def validate_bool(value):
         raise ValidationError(_(u"Must be a boolean"))
 
 
-def validate_object(value):
-    '''
-    Raises ``ValidationError`` unless *value* is a saved
-    django model instance.
-    '''
-    if not isinstance(value, models.Model):
-        raise ValidationError(_(u"Must be a django model object instance"))
-    if not value.pk:
-        raise ValidationError(_(u"Model has not been saved yet"))
-
-
 def validate_enum(value):
     '''
     Raises ``ValidationError`` unless *value* is a saved
@@ -107,9 +96,3 @@ def validate_enum(value):
         raise ValidationError(_(u"Must be an EnumValue model object instance"))
     if not value.pk:
         raise ValidationError(_(u"EnumValue has not been saved yet"))
-
-def validate_page(value):
-    '''
-    Doesn't do anything, no validation needed
-    '''
-    pass

@@ -20,10 +20,13 @@
 ******
 models
 ******
-This module defines the four concrete, non-abstract models:
+This module defines the two abstract models:
 
-* :class:`Value`
-* :class:`Attribute`
+* :class:`BaseValue`
+* :class:`BaseAttribute`
+
+As well as two concrete models:
+
 * :class:`EnumValue`
 * :class:`EnumGroup`
 
@@ -49,9 +52,9 @@ from .fields import EavSlugField, EavDatatypeField
 
 class EnumGroup(models.Model):
     '''
-    *EnumGroup* objects have just a  *name* ``CharField``. :class:`Attribute`
-    classes with datatype *TYPE_ENUM* have a ``ForeignKey`` field to
-    *EnumGroup*.
+    *EnumGroup* objects have just a  *name* ``CharField``.
+    :class:`BaseAttribute` classes with datatype *TYPE_ENUM* have a
+    ``ForeignKey`` field to *EnumGroup*.
 
     See :class:`EnumValue` for an example.
 
@@ -69,7 +72,7 @@ class EnumGroup(models.Model):
 class EnumValue(models.Model):
     '''
     *EnumValue* objects are the value 'choices' to multiple choice
-    *TYPE_ENUM* :class:`Attribute` objects.
+    *TYPE_ENUM* :class:`BaseAttribute` subclass objects.
 
     They have two fields: a *value* ``CharField`` that must be unique, and
     *group*, a ``ForeignKey`` to :class:`EnumGroup`. 
@@ -83,8 +86,8 @@ class EnumValue(models.Model):
     >>> ynu = EnumGroup.objects.create(name='Yes / No / Unkown')
     >>> ynu.value_set.add(yes, no, unkown)
 
-    >>> Attribute.objects.create(name='Has Fever?',
-    ...                          datatype=Attribute.TYPE_ENUM,
+    >>> PatientAttribute.objects.create(name='Has Fever?',
+    ...                          datatype=BaseAttribute.TYPE_ENUM,
     ...                          enum_group=ynu)
     '''
     value = models.CharField(_(u"value"), db_index=True,
@@ -100,79 +103,56 @@ class EnumValue(models.Model):
         verbose_name_plural = _(u'enum values')
 
 
-class Attribute(models.Model):
+class BaseAttribute(models.Model):
     '''
     Putting the **A** in *EAV*. This holds the attributes, or concepts.
-    Examples of possible *Attributes*: color, height, weight,
+    Examples of possible *attributes*: color, height, weight,
     number of children, number of patients, has fever?, etc...
 
     Each attribute has a name, and a description, along with a slug that must
     be unique.  If you don't provide a slug, a default slug (derived from
     name), will be created.
 
-    The *required* field is a boolean that indicates whether this EAV attribute
-    is required for entities to which it applies. It defaults to *False*.
+    The available datatypes are determined by the subclassing model. 
 
-    .. warning::
-       Just like a normal model field that is required, you will not be able
-       to save or create any entity object for which this attribute applies,
-       without first setting this EAV attribute.
-
-    There are 8 possible values for datatype:
-
-        * int (TYPE_INT)
-        * float (TYPE_FLOAT)
-        * text (TYPE_TEXT)
-        * date (TYPE_DATE)
-        * bool (TYPE_BOOLEAN)
-        * object (TYPE_OBJECT)
-        * enum (TYPE_ENUM)
+    This is an abstract model. All you have to do is subclass and register your
+    concrete model. See :class:`BaseValue` for a full example.
 
     Examples:
 
-    >>> Attribute.objects.create(name='Height', datatype=Attribute.TYPE_INT)
-    <Attribute: Height (Integer)>
+    >>> PatientAttribute.objects.create(name='Height', datatype=BaseAttribute.TYPE_INT)
+    <PatientAttribute: Height (Integer)>
 
-    >>> Attribute.objects.create(name='Color', datatype=Attribute.TYPE_TEXT)
-    <Attribute: Color (Text)>
+    >>> PatientAttribute.objects.create(name='Color', datatype=BaseAttribute.TYPE_TEXT)
+    <PatientAttribute: Color (Text)>
 
     >>> yes = EnumValue(value='yes')
     >>> no = EnumValue(value='no')
     >>> unkown = EnumValue(value='unkown')
     >>> ynu = EnumGroup.objects.create(name='Yes / No / Unkown')
     >>> ynu.enums.add(yes, no, unkown)
-    >>> Attribute.objects.create(name='Has Fever?',
-    ...                          datatype=Attribute.TYPE_ENUM,
+    >>> PatientAttribute.objects.create(name='Has Fever?',
+    ...                          datatype=BaseAttribute.TYPE_ENUM,
     ...                          enum_group=ynu)
-    <Attribute: Has Fever? (Multiple Choice)>
+    <PatientAttribute: Has Fever? (Multiple Choice)>
 
-    .. warning:: Once an Attribute has been used by an entity, you can not
+    .. warning:: Once an attribute has been used by an entity, you cannot
                  change it's datatype.
     '''
-
-    class Meta:
-        ordering = ['name']
-        unique_together = ('site', 'slug', 'parent')
-        verbose_name = _(u'attribute')
-        verbose_name_plural = _(u'attributes')
 
     TYPE_TEXT = 'text'
     TYPE_FLOAT = 'float'
     TYPE_INT = 'int'
     TYPE_DATE = 'date'
     TYPE_BOOLEAN = 'bool'
-    TYPE_OBJECT = 'object'
     TYPE_ENUM = 'enum'
 
-    DATATYPE_CHOICES = (
-        (TYPE_TEXT, _(u"Text")),
-        (TYPE_FLOAT, _(u"Float")),
-        (TYPE_INT, _(u"Integer")),
-        (TYPE_DATE, _(u"Date")),
-        (TYPE_BOOLEAN, _(u"True / False")),
-        (TYPE_OBJECT, _(u"Django Object")),
-        (TYPE_ENUM, _(u"Multiple Choice")),
-    )
+    class Meta:
+        abstract = True
+        ordering = ['name']
+        unique_together = ('site', 'slug')
+        verbose_name = _(u'attribute')
+        verbose_name_plural = _(u'attributes')
 
     name = models.CharField(_(u"name"), max_length=100,
                             help_text=_(u"User-friendly attribute name"))
@@ -180,7 +160,7 @@ class Attribute(models.Model):
     site = models.ForeignKey(Site, verbose_name=_(u"site"),
                              default=Site.objects.get_current)
 
-    slug = EavSlugField(_(u"slug"), max_length=50, db_index=True,
+    slug = EavSlugField(_(u"slug"), max_length=100, db_index=True,
                           editable=False,
                           help_text=_(u"Short unique attribute label"))
 
@@ -197,27 +177,12 @@ class Attribute(models.Model):
 
     datatype = EavDatatypeField(_(u"data type"), max_length=8)
 
-    created = models.DateTimeField(_(u"created"), auto_now_add=True,
-                                   editable=False)
-
-    modified = models.DateTimeField(_(u"modified"), auto_now=True)
-
-    required = models.BooleanField(_(u"required"), default=False)
-    display_in_list = models.BooleanField(_(u"display in admin list view"), default=False)
-    searchable = models.BooleanField(_(u"Allow searching on field"), default=False)
-
     objects = models.Manager()
     on_site = CurrentSiteManager()
-    
-    #reference to Django model that this attribute is restricted to
-    parent = models.ForeignKey(ContentType, null=True, blank=True)
-    
-    def __init__(self, *args, **kwargs):
-        parent = kwargs.get('parent', None)
-        if parent and not isinstance(parent, ContentType):
-            kwargs['parent'] = ContentType.objects.get_for_model(parent)
-        return super(Attribute, self).__init__(*args, **kwargs)
-    
+
+    def get_value_cls(self):
+        return self.parent_model._eav_config_cls.value_cls
+
     def get_validators(self):
         '''
         Returns the appropriate validator function from :mod:`~eav.validators`
@@ -234,13 +199,13 @@ class Attribute(models.Model):
             'int': validate_int,
             'date': validate_date,
             'bool': validate_bool,
-            'object': validate_object,
             'enum': validate_enum,
-            'page': validate_page,
         }
 
-        validation_function = DATATYPE_VALIDATORS[self.datatype]
-        return [validation_function]
+        validation_function = DATATYPE_VALIDATORS.get(self.datatype, None)
+        if validation_function:
+            return [validation_function]
+        return []
 
     def validate_value(self, value):
         '''
@@ -257,16 +222,13 @@ class Attribute(models.Model):
 
     def save(self, *args, **kwargs):
         '''
-        Saves the Attribute and auto-generates a slug field if one wasn't
+        Saves the attribute and auto-generates a slug field if one wasn't
         provided.
-        
-        If parent provided is not already a ContentType, calculate this.  
-        Yes, this means you can't add Attributes for the ContentType model.
         '''
         if not self.slug:
             self.slug = EavSlugField.create_slug_from_name(self.name)
         self.full_clean()
-        super(Attribute, self).save(*args, **kwargs)
+        super(BaseAttribute, self).save(*args, **kwargs)
 
     def clean(self):
         '''
@@ -289,7 +251,7 @@ class Attribute(models.Model):
         Returns a query set of :class:`EnumValue` objects for this attribute.
         Returns None if the datatype of this attribute is not *TYPE_ENUM*.
         '''
-        if not self.datatype == Attribute.TYPE_ENUM:
+        if not self.datatype == self.TYPE_ENUM:
             return None
         return self.enum_group.enums.all()
 
@@ -301,19 +263,12 @@ class Attribute(models.Model):
 
         If a :class:`Value` object for this *entity* and attribute doesn't
         exist, one will be created.
-
-        .. note::
-           If *value* is None and a :class:`Value` object exists for this
-            Attribute and *entity*, it will delete that :class:`Value` object.
         '''
-        ct = ContentType.objects.get_for_model(entity)
         try:
-            value_obj = self.value_set.get(entity_ct=ct,
-                                           entity_id=entity.pk,
+            value_obj = self.get_value_cls().objects.get(entity=entity,
                                            attribute=self)
-        except Value.DoesNotExist:
-            value_obj = Value.objects.create(entity_ct=ct,
-                                             entity_id=entity.pk,
+        except self.get_value_cls().DoesNotExist:
+            value_obj = self.get_value_cls().objects.create(entity=entity,
                                              attribute=self)
 
         if value != value_obj.value:
@@ -322,86 +277,73 @@ class Attribute(models.Model):
             value_obj.value = value
             value_obj.save()
 
-    @classmethod
-    def get_for_model(cls, model):
-        ct = ContentType.objects.get_for_model(model)
-        return cls.objects.filter(parent__in=(None, ct))
+    def get_datatype_display(self):
+        value_field = 'value_' + self.datatype
+        return self.get_value_cls()._meta.get_field(value_field).verbose_name
 
     def __unicode__(self):
         return u"%s (%s)" % (self.name, self.get_datatype_display())
-    
-class PartitionedAttributeManager(models.Manager):
-    def get_query_set(self):
-        qs = super(PartitionedAttributeManager, self).get_query_set()
-        if self.model.parent_model:
-            ctype = ContentType.objects.get_for_model(model=self.model.parent_model)
-            return qs.filter(parent=ctype)
-        else:
-            return qs
-
-class PartitionedAttribute(Attribute):
-    """
-    A proxy model class to handle segregating types of Attributes by the
-    Entities they can be applied to.
-    """
-    objects = PartitionedAttributeManager()
-    parent_model = None #this must be set in the derived class or this isn't actually partitioned
-    
-    class Meta:
-        proxy = True
-        
 
 
 class BaseValue(models.Model):
     """
     Abstract model for building values. To add custom value types, subclass
-    this, add an "entity" field that is a ForeignKey pointing at your entity
-    model, define your custom types and register it like this:
+    this, add an "attribute" field that is a ForeignKey pointing at your
+    attribute model, add an "entity" field that is a ForeignKey pointing at
+    your entity model, define your custom types and register it like this:
+        class PageAttribute(BaseAttribute):
+            pass
+
         class PageValue(BaseValue"):
+            attribute = models.ForeignKey(PageAttribute, blank=False,
+                                          null=False)
             entity = models.ForeignKey(Page, blank=False, null=False)
             value_author = models.ForeignKey(User, blank=True, null=True)
 
-        eav.register(Page, PageValue)
+        eav.register(Page, PageAttribute, PageValue)
     """
-    value_text = models.TextField(blank=True, null=True)
-    value_float = models.FloatField(blank=True, null=True)
-    value_int = models.IntegerField(blank=True, null=True)
-    value_date = models.DateTimeField(blank=True, null=True)
-    value_bool = models.NullBooleanField(blank=True, null=True)
-    value_enum = models.ForeignKey(EnumValue, blank=True, null=True,
+    value_text = models.TextField(_(u"text"), blank=True, null=True,
+                                  db_index=True)
+    value_float = models.FloatField(_(u"floating point"), blank=True,
+                                    null=True, db_index=True)
+    value_int = models.IntegerField(_(u"integer"), blank=True, null=True,
+                                    db_index=True)
+    value_date = models.DateTimeField(_(u"date and time"), blank=True,
+                                      null=True, db_index=True)
+    value_bool = models.NullBooleanField(_(u"Yes / No"), blank=True,
+                                         null=True, db_index=True)
+    value_enum = models.ForeignKey(EnumValue,
+                                   verbose_name=_(u"multiple choice"),
+                                   blank=True, null=True,
                                    related_name='eav_%(class)ss')
-
-    generic_value_id = models.IntegerField(blank=True, null=True)
-    generic_value_ct = models.ForeignKey(ContentType, blank=True, null=True,
-                                         related_name='%(class)s_values')
-    value_object = generic.GenericForeignKey(ct_field='generic_value_ct',
-                                             fk_field='generic_value_id')
-
-    created = models.DateTimeField(_(u"created"), auto_now_add=True)
-    modified = models.DateTimeField(_(u"modified"), auto_now=True)
-
-    attribute = models.ForeignKey(Attribute, db_index=True,
-                                  verbose_name=_(u"attribute"))
 
     def save(self, *args, **kwargs):
         '''
         Validate and save this value
         '''
         self.full_clean()
-        super(Value, self).save(*args, **kwargs)
+        super(BaseValue, self).save(*args, **kwargs)
 
     def clean(self):
         '''
         Raises ``ValidationError`` if this value's attribute is *TYPE_ENUM*
         and value_enum is not a valid choice for this value's attribute.
         '''
-        if self.attribute.datatype == Attribute.TYPE_ENUM and \
+        if self.attribute.datatype == BaseAttribute.TYPE_ENUM and \
            self.value_enum:
             if self.value_enum not in self.attribute.enum_group.enums.all():
                 raise ValidationError(_(u"%(choice)s is not a valid " \
                                         u"choice for %s(attribute)") % \
                                         {'choice': self.value_enum,
                                          'attribute': self.attribute})
+
+    @classmethod
+    def get_datatype_choices(cls):
+        value_field_prefix = 'value_'
+        value_fields = [f for f in cls._meta.fields
+                        if f.name.startswith(value_field_prefix)]
+        return [(f.name[len(value_field_prefix):], f.verbose_name)
+                for f in value_fields]
 
     def _get_value(self):
         '''
@@ -427,17 +369,6 @@ class BaseValue(models.Model):
         verbose_name_plural = _(u'values')
 
 
-class Value(BaseValue):
-    '''
-    Default implementation that supports any of the simple built-in attribute
-    types and can be used with any entity type.
-    '''
-    entity_ct = models.ForeignKey(ContentType, related_name='value_entities')
-    entity_id = models.IntegerField()
-    entity = generic.GenericForeignKey(ct_field='entity_ct',
-                                       fk_field='entity_id')
-
-
 class Entity(object):
     '''
     The helper class that will be attached to any entity registered with
@@ -450,7 +381,9 @@ class Entity(object):
         to.  Also, store the content type of that instance.
         '''
         self.model = instance
-        self.ct = ContentType.objects.get_for_model(instance)
+
+    def __getitem__(self, name):
+        return self.__getattr__(name)
 
     def __getattr__(self, name):
         '''
@@ -458,28 +391,28 @@ class Entity(object):
         this_instance.<whatever>
 
         Checks if *name* is a valid slug for attributes available to this
-        instances. If it is, tries to lookup the :class:`Value` with that
+        instances. If it is, tries to lookup the :class:`BaseValue` with that
         attribute slug. If there is one, it returns the value of the
-        class:`Value` object, otherwise it hasn't been set, so it returns
+        class:`BaseValue` object, otherwise it hasn't been set, so it returns
         None.
         '''
         if not name.startswith('_'):
             try:
                 attribute = self.get_attribute_by_slug(name)
-            except Attribute.DoesNotExist:
+            except self.model._eav_config_cls.attribute_cls.DoesNotExist:
                 raise AttributeError(_(u"%(obj)s has no EAV attribute named " \
                                        u"'%(attr)s'") % \
                                      {'obj': self.model, 'attr': name})
             try:
                 return self.get_value_by_attribute(attribute).value
-            except Value.DoesNotExist:
+            except self.model._eav_config_cls.value_cls.DoesNotExist:
                 raise AttributeError
         return getattr(super(Entity, self), name)
 
     def get_all_attributes(self):
         '''
-        Return a query set of all :class:`Attribute` objects that can be set
-        for this entity.
+        Return a query set of all :class:`BaseAttribute` objects that can be
+        set for this entity.
         '''
         # cache result
         if not hasattr(self, '_attributes_qs'):
@@ -525,8 +458,8 @@ class Entity(object):
         '''
         Get all set :class:`Value` objects for self.model
         '''
-        return Value.objects.filter(entity_ct=self.ct,
-                                    entity_id=self.model.pk).select_related()
+        return self.model._eav_config_cls.value_cls.objects.filter(
+                                            entity=self.model).select_related()
 
     def get_all_attribute_slugs(self):
         '''
@@ -540,7 +473,7 @@ class Entity(object):
 
     def get_attribute_by_slug(self, slug):
         '''
-        Returns a single :class:`Attribute` with *slug*
+        Returns a single :class:`BaseAttribute` with *slug*
         '''
         return self.get_all_attributes().get(slug=slug)
 
@@ -581,11 +514,3 @@ class Entity(object):
         entity = getattr(kwargs['instance'], instance._eav_config_cls.eav_attr)
         entity.validate_attributes()
 
-if 'django_nose' in settings.INSTALLED_APPS:
-    '''
-    The django_nose test runner won't automatically create our Patient model
-    database table which is required for tests, unless we import it here.
-
-    Please, someone tell me a better way to do this.
-    '''
-    from .tests.models import Patient, Encounter

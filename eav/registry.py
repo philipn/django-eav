@@ -32,8 +32,7 @@ from django.contrib.contenttypes import generic
 from django.contrib.contenttypes.models import ContentType
 
 from .managers import EntityManager
-from .models import Entity, Attribute, Value
-
+from .models import Entity
 
 class EavConfig(object):
     '''
@@ -44,21 +43,15 @@ class EavConfig(object):
     manager_attr = 'objects'
     manager_only = False
     eav_attr = 'eav'
-    generic_relation_attr = 'eav_values'
-    generic_relation_related_name = None
-    parent = None
+    eav_relation_attr = 'eav_values'
 
     @classmethod
     def get_attributes(cls, entity=None):
         '''
-        By default, all :class:`~eav.models.Attribute` object apply to an
-        entity, unless you provide a custom EavConfig class overriding this.
+        By default, all model-appropriate attribute object apply to an entity,
+        unless you provide a custom EavConfig class overriding this.
         '''
-        qs = Attribute.on_site.all()
-        if cls.parent:
-            ctype = ContentType.objects.get_for_model(cls.parent)
-            qs = qs.filter(parent__in=(ctype, None))
-        return qs
+        return cls.attribute_cls.objects.all()
 
 class Registry(object):
     '''
@@ -67,11 +60,11 @@ class Registry(object):
     '''
 
     @staticmethod
-    def register(model_cls, value_cls=None, config_cls=None,
-                 filter_by_parent=False):
+    def register(model_cls, attribute_cls, value_cls, config_cls=None):
         '''
-        Registers *model_cls* with eav. You can pass an optional *config_cls*
-        to override the EavConfig defaults.
+        Registers *model_cls* and corresponding *attribute_cls* and *value_cls*
+        with eav. You can pass an optional *config_cls* to override the
+        EavConfig defaults.
 
         .. note::
            Multiple registrations for the same entity are harmlessly ignored.
@@ -83,15 +76,14 @@ class Registry(object):
             config_cls = type("%sConfig" % model_cls.__name__,
                               (EavConfig,), {})
 
-        if filter_by_parent:
-            config_cls.parent = model_cls
+        config_cls.attribute_cls = attribute_cls
+        config_cls.value_cls = value_cls
+        attribute_cls.parent_model = model_cls
 
         # set _eav_config_cls on the model so we can access it there
         setattr(model_cls, '_eav_config_cls', config_cls)
 
-        setattr(model_cls, '_eav_value_cls', value_cls or Value)
-
-        reg = Registry(model_cls, value_cls)
+        reg = Registry(model_cls)
         reg._register_self()
 
     @staticmethod
@@ -104,27 +96,25 @@ class Registry(object):
         '''
         if not getattr(model_cls, '_eav_config_cls', None):
             return
-        reg = Registry(model_cls, value_cls)
+        reg = Registry(model_cls)
         reg._unregister_self()
 
         delattr(model_cls, '_eav_config_cls')
-        delattr(model_cls, '_eav_value_cls')
 
     @staticmethod
     def attach_eav_attr(sender, *args, **kwargs):
         '''
-        Attache EAV Entity toolkit to an instance after init.
+        Attach EAV Entity toolkit to an instance after init.
         '''
         instance = kwargs['instance']
         config_cls = instance.__class__._eav_config_cls
         setattr(instance, config_cls.eav_attr, Entity(instance))
 
-    def __init__(self, model_cls, value_cls):
+    def __init__(self, model_cls):
         '''
         Set the *model_cls* and its *config_cls*
         '''
         self.model_cls = model_cls
-        self.value_cls = value_cls
         self.config_cls = model_cls._eav_config_cls
 
     def _attach_manager(self):
@@ -166,49 +156,21 @@ class Registry(object):
         pre_save.disconnect(Entity.pre_save_handler, sender=self.model_cls)
         post_save.disconnect(Entity.post_save_handler, sender=self.model_cls)
 
-    def _attach_generic_relation(self):
-        '''
-        Set up the generic relation for the entity
-        '''
-        rel_name = self.config_cls.generic_relation_related_name or \
-                   'entity'
-
-        gr_name = self.config_cls.generic_relation_attr.lower()
-        generic_relation = \
-                     generic.GenericRelation(Value,
-                                             object_id_field='entity_id',
-                                             content_type_field='entity_ct',
-                                             related_name=rel_name)
-        generic_relation.contribute_to_class(self.model_cls, gr_name)
-
-    def _detach_generic_relation(self):
-        '''
-        Remove the generic relation from the entity
-        '''
-        gen_rel_field = self.config_cls.generic_relation_attr.lower()
-        for field in self.model_cls._meta.local_many_to_many:
-            if field.name == gen_rel_field:
-                self.model_cls._meta.local_many_to_many.remove(field)
-                break
-
-        delattr(self.model_cls, gen_rel_field)
-
     def _alias_entity_related_name(self):
         '''
-        When working with a custom Value that has a real ForeignKey entity
-        field, alias the entity's related name so it can be standard.
+        Alias the entity's related name so it can be standard.
         '''
-        gen_rel_field = self.config_cls.generic_relation_attr.lower()
-        related_name = self.value_cls.entity.field.related_query_name()
+        rel_field = self.config_cls.eav_relation_attr.lower()
+        related_name = self.config_cls.value_cls.entity.field.related_query_name()
 
-        def get_eav_value(cls):
+        def get_eav_values(cls):
             return getattr(cls, related_name)
 
-        setattr(self.model_cls, gen_rel_field, property(get_eav_value))
+        setattr(self.model_cls, rel_field, property(get_eav_values))
 
     def _unalias_entity_related_name(self):
-        gen_rel_field = self.config_cls.generic_relation_attr.lower()
-        delattr(self.model_cls, gen_rel_field)
+        rel_field = self.config_cls.eav_relation_attr.lower()
+        delattr(self.model_cls, rel_field)
 
     def _register_self(self):
         '''
@@ -218,10 +180,7 @@ class Registry(object):
 
         if not self.config_cls.manager_only:
             self._attach_signals()
-            if not self.value_cls:
-                self._attach_generic_relation()
-            else:
-                self._alias_entity_related_name()
+            self._alias_entity_related_name()
 
     def _unregister_self(self):
         '''
@@ -231,7 +190,4 @@ class Registry(object):
 
         if not self.config_cls.manager_only:
             self._detach_signals()
-            if not self.value_cls:
-                self._detach_generic_relation()
-            else:
-                self._unalias_entity_related_name()
+            self._unalias_entity_related_name()
