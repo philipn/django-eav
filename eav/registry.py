@@ -31,7 +31,6 @@ from django.db.models.signals import post_init, pre_save, post_save
 from django.contrib.contenttypes import generic
 from django.contrib.contenttypes.models import ContentType
 
-from .managers import EntityManager
 from .models import Entity
 
 class EavConfig(object):
@@ -40,8 +39,6 @@ class EavConfig(object):
     This is where all the default eav attribute names are defined.
     '''
 
-    manager_attr = 'objects'
-    manager_only = False
     eav_attr = 'eav'
     eav_relation_attr = 'eav_values'
 
@@ -117,29 +114,6 @@ class Registry(object):
         self.model_cls = model_cls
         self.config_cls = model_cls._eav_config_cls
 
-    def _attach_manager(self):
-        '''
-        Attach the manager to *manager_attr* specified in *config_cls*
-        '''
-        # save the old manager if the attribute name conflict with the new one
-        if hasattr(self.model_cls, self.config_cls.manager_attr):
-            mgr = getattr(self.model_cls, self.config_cls.manager_attr)
-            self.config_cls.old_mgr = mgr
-
-        # attache the new manager to the model
-        mgr = EntityManager()
-        mgr.contribute_to_class(self.model_cls, self.config_cls.manager_attr)
-
-    def _detach_manager(self):
-        '''
-        Detach the manager, and reatach the previous manager (if there was one)
-        '''
-        delattr(self.model_cls, self.config_cls.manager_attr)
-        if hasattr(self.config_cls, 'old_mgr'):
-            self.config_cls.old_mgr \
-                .contribute_to_class(self.model_cls,
-                                     self.config_cls.manager_attr)
-
     def _attach_signals(self):
         '''
         Attach all signals for eav
@@ -176,18 +150,12 @@ class Registry(object):
         '''
         Call the necessary registration methods
         '''
-        self._attach_manager()
-
-        if not self.config_cls.manager_only:
-            self._attach_signals()
-            self._alias_entity_related_name()
+        self._attach_signals()
+        self._alias_entity_related_name()
 
     def _unregister_self(self):
         '''
         Call the necessary unregistration methods
         '''
-        self._detach_manager()
-
-        if not self.config_cls.manager_only:
-            self._detach_signals()
-            self._unalias_entity_related_name()
+        self._detach_signals()
+        self._unalias_entity_related_name()
