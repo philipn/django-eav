@@ -16,6 +16,7 @@
 #
 #    You should have received a copy of the GNU Lesser General Public License
 #    along with EAV-Django.  If not, see <http://gnu.org/licenses/>.
+from django.template.defaultfilters import stringfilter
 '''
 ******
 fields
@@ -36,37 +37,41 @@ from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from django.core.exceptions import ValidationError
 
+
+def slugify(value):
+    """
+    Normalizes attribute name for db lookup
+
+    Args:
+        value: String or unicode object to normalize.
+    Returns:
+        Lowercase string with special characters removed.
+    """
+
+    # normalize unicode
+    import unicodedata
+    value = unicodedata.normalize('NFKD', unicode(value))
+
+    # remove non-{word,space} characters
+    misc_characters = re.compile('[^\w\s]', re.UNICODE)
+    value = re.sub(misc_characters, '', value)
+    value = value.strip()
+    value = re.sub('[_\s]+', '_', value)
+
+    return value.lower()
+slugify = stringfilter(slugify)
+
 class EavSlugField(models.SlugField):
     '''
     The slug field used by :class:`~eav.models.BaseAttribute`
     '''
-
-    def validate(self, value, instance):
-        '''
-        Slugs are used to convert the Python attribute name to a database
-        lookup and vice versa. We need it to be a valid Python identifier.
-        We don't want it to start with a '_', underscore will be used
-        var variables we don't want to be saved in db.
-        '''
-        super(EavSlugField, self).validate(value, instance)
-        slug_regex = r'[a-z][a-z0-9_]*'
-        if not re.match(slug_regex, value):
-            raise ValidationError(_(u"Must be all lower case, " \
-                                    u"start with a letter, and contain " \
-                                    u"only letters, numbers, or underscores."))
 
     @staticmethod
     def create_slug_from_name(name):
         '''
         Creates a slug based on the name
         '''
-        name = name.strip().lower()
-
-        # Change spaces to underscores
-        name = '_'.join(name.split())
-
-        # Remove non alphanumeric characters
-        return re.sub('[^\w]', '', name)
+        return slugify(name)
 
 class EavDatatypeField(models.CharField):
     '''

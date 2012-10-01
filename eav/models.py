@@ -225,8 +225,7 @@ class BaseAttribute(models.Model):
         Saves the attribute and auto-generates a slug field if one wasn't
         provided.
         '''
-        if not self.slug:
-            self.slug = EavSlugField.create_slug_from_name(self.name)
+
         self.full_clean()
         super(BaseAttribute, self).save(*args, **kwargs)
 
@@ -236,6 +235,10 @@ class BaseAttribute(models.Model):
         the attribute's datatype is *TYPE_ENUM* and enum_group is not set,
         or if the attribute is not *TYPE_ENUM* and the enum group is set.
         '''
+        self.slug = EavSlugField.create_slug_from_name(self.name)
+        if not self.slug:
+            raise ValidationError(_(u"The attribute name is invalid."))
+
         if self.datatype == self.TYPE_ENUM and not self.enum_group:
             raise ValidationError(_(
                 u"You must set the choice group for multiple choice " \
