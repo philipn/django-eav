@@ -444,12 +444,7 @@ class Entity(object):
         '''
         for attribute in self.get_all_attributes():
             value = getattr(self, attribute.slug, None)
-            if value is None:
-                if attribute.required:
-                    raise ValidationError(_(u"%(attr)s EAV field cannot " \
-                                            u"be blank") % \
-                                            {'attr': attribute.slug})
-            else:
+            if value is not None:
                 try:
                     attribute.validate_value(value)
                 except ValidationError, e:

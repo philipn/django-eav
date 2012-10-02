@@ -125,7 +125,6 @@ class BaseDynamicEntityForm(ModelForm):
             # Just a regular single field
             defaults = {
                 'label': attribute.name.capitalize(),
-                'required': attribute.required,
                 'help_text': attribute.help_text,
                 'validators': attribute.get_validators(),
             }
