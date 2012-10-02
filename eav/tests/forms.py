@@ -6,19 +6,19 @@ except ImportError:
 from django.test import TestCase
 
 import eav
-from .models import Patient
+from .models import Patient, PatientAttribute, PatientValue
 from ..forms import BaseDynamicEntityForm
-from ..models import Attribute, EnumValue, EnumGroup
+from ..models import EnumValue, EnumGroup
 
 class FormTest(TestCase):
     def setUp(self):
-        eav.register(Patient)
+        eav.register(Patient, PatientAttribute, PatientValue)
 
-        Attribute.objects.create(name='Age', datatype=Attribute.TYPE_INT)
-        Attribute.objects.create(name='DoB', datatype=Attribute.TYPE_DATE)
-        Attribute.objects.create(name='Height', datatype=Attribute.TYPE_FLOAT)
-        Attribute.objects.create(name='City', datatype=Attribute.TYPE_TEXT)
-        Attribute.objects.create(name='Pregnant?', datatype=Attribute.TYPE_BOOLEAN)
+        PatientAttribute.objects.create(name='Age', datatype=PatientAttribute.TYPE_INT)
+        PatientAttribute.objects.create(name='DoB', datatype=PatientAttribute.TYPE_DATE)
+        PatientAttribute.objects.create(name='Height', datatype=PatientAttribute.TYPE_FLOAT)
+        PatientAttribute.objects.create(name='City', datatype=PatientAttribute.TYPE_TEXT)
+        PatientAttribute.objects.create(name='Pregnant?', datatype=PatientAttribute.TYPE_BOOLEAN)
 
         yes = EnumValue.objects.create(value='yes')
         no = EnumValue.objects.create(value='no')
@@ -27,15 +27,23 @@ class FormTest(TestCase):
         ynu.enums.add(yes)
         ynu.enums.add(no)
         ynu.enums.add(unkown)
-        Attribute.objects.create(name='Fever?', datatype=Attribute.TYPE_ENUM, enum_group=ynu, required=True)
+        PatientAttribute.objects.create(name='Fever?', datatype=PatientAttribute.TYPE_ENUM, enum_group=ynu)
+
+    def tearDown(self):
+        eav.unregister(Patient)
 
     def test_form_validation(self):
-        kwargs = {'eav__age': 2, 'eav__dob': now(), 'eav__height': 14.1,
-                'eav__city': 'SomeSity', 'eav__pregnant':False, 'eav__fever':EnumValue.objects.get(id=2)}
-        p = Patient.objects.create(**kwargs)
+        p = Patient.objects.create(name='Bob')
+        p.eav.age = 2
+        p.eav.dob = now()
+        p.eav.height = 14.1
+        p.eav.city = 'San Francisco'
+        p.eav.pregnant = False
+        p.eav.fever = EnumValue.objects.get(id=2)
+        p.save()
 
-        # required "fever" field
-        data = {}
+        # invalid age field
+        data = {'age': 'abc'}
         form = BaseDynamicEntityForm(data=data, instance=p)
         self.assertFalse(form.is_valid())
 
