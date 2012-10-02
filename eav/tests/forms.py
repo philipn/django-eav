@@ -39,7 +39,7 @@ class FormTest(TestCase):
         p.eav.height = 14.1
         p.eav.city = 'San Francisco'
         p.eav.pregnant = False
-        p.eav.fever = EnumValue.objects.get(id=2)
+        p.eav.fever = EnumValue.objects.get(value='yes')
         p.save()
 
         # invalid age field
@@ -48,6 +48,8 @@ class FormTest(TestCase):
         self.assertFalse(form.is_valid())
 
         # all valid
-        data = {'age': 1, 'dob_0': '2012-01-01', 'dob_1': '12:00:00', 'height': 10.1, 'city': 'Moscow', 'pregnant':True, 'fever':1}
+        data = {'age': 1, 'dob_0': '2012-01-01', 'dob_1': '12:00:00',
+                'height': 10.1, 'city': 'Moscow', 'pregnant': True,
+                'fever': EnumValue.objects.get(value='no').id}
         form = BaseDynamicEntityForm(data=data, instance=p)
         self.assertTrue(form.is_valid())
