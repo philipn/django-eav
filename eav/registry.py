@@ -146,12 +146,28 @@ class Registry(object):
         rel_field = self.config_cls.eav_relation_attr.lower()
         delattr(self.model_cls, rel_field)
 
+    def _alias_attribute_related_name(self):
+        '''
+        Alias attribute's value_set to whatever the real related name is.
+        '''
+        related_name = self.config_cls.value_cls.attribute.field.related_query_name()
+        related_name += '_set'
+
+        def get_eav_values(cls):
+            return getattr(cls, related_name)
+
+        setattr(self.config_cls.attribute_cls, 'value_set', property(get_eav_values))
+
+    def _unalias_attribute_related_name(self):
+        delattr(self.config_cls.attribute_cls, 'value_set')
+
     def _register_self(self):
         '''
         Call the necessary registration methods
         '''
         self._attach_signals()
         self._alias_entity_related_name()
+        self._alias_attribute_related_name()
 
     def _unregister_self(self):
         '''
@@ -159,3 +175,4 @@ class Registry(object):
         '''
         self._detach_signals()
         self._unalias_entity_related_name()
+        self._unalias_attribute_related_name()
