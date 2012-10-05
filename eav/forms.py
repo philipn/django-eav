@@ -36,6 +36,7 @@ from django.forms import Widget
 from django.forms.models import ModelChoiceField, inlineformset_factory
 from django.contrib.admin.widgets import AdminSplitDateTime
 from django.utils.translation import ugettext_lazy as _
+from django.utils.encoding import smart_unicode
 from django.template.loader import render_to_string
 
 
@@ -72,7 +73,16 @@ def form_as_single_field(FormClass, instance, prefix):
     return ModelField()
 
 
-class BaseDynamicEntityForm(ModelForm):
+class UTF8FieldNamesMixin(object):
+    """
+    Form mixin that fixes an issue with the default implementation and allows
+    for UTF-8 encoded field names, not just ASCII.
+    """
+    def add_prefix(self, field_name):
+        prefix = super(UTF8FieldNamesMixin, self).add_prefix(field_name)
+        return smart_unicode(prefix)
+
+class BaseDynamicEntityForm(UTF8FieldNamesMixin, ModelForm):
     '''
     ModelForm for entity with support for EAV attributes. Form fields are
     created on the fly depending on Schema defined for given entity instance.
@@ -115,12 +125,13 @@ class BaseDynamicEntityForm(ModelForm):
 
     def create_form_fields_for_attribute(self, attribute, value):
         datatype = attribute.datatype
+        field_name = attribute.slug.encode('utf-8')
         FieldOrForm = self.get_field_class_for_type(datatype)
         is_form = hasattr(FieldOrForm, 'as_table')
         if is_form:
             # Assume this is for a FK'd instance, construct its form
-            self.fields[attribute.slug] = form_as_single_field(FieldOrForm,
-                                        instance=value, prefix=attribute.slug)
+            self.fields[field_name] = form_as_single_field(FieldOrForm,
+                                        instance=value, prefix=field_name)
         else:
             # Just a regular single field
             defaults = {
@@ -145,11 +156,11 @@ class BaseDynamicEntityForm(ModelForm):
             elif datatype == attribute.TYPE_DATE:
                 defaults.update({'widget': AdminSplitDateTime})
 
-            self.fields[attribute.slug] = FieldOrForm(**defaults)
+            self.fields[field_name] = FieldOrForm(**defaults)
 
             # fill initial data (if attribute was already defined)
             if value and not datatype == attribute.TYPE_ENUM: #enum  done above
-                self.initial[attribute.slug] = value
+                self.initial[field_name] = value
 
     def save(self, commit=True):
         """
@@ -169,16 +180,17 @@ class BaseDynamicEntityForm(ModelForm):
 
         # assign attributes
         for attribute in self.entity.get_all_attributes():
-            if attribute.slug not in self.cleaned_data:
+            field_name = attribute.slug.encode('utf-8')
+            if field_name not in self.cleaned_data:
                 continue
-            value = self.cleaned_data.get(attribute.slug)
+            value = self.cleaned_data.get(field_name)
             if attribute.datatype == attribute.TYPE_ENUM:
                 if value:
                     value = attribute.enum_group.enums.get(pk=value)
                 else:
                     value = None
 
-            setattr(self.entity, attribute.slug, value)
+            self.entity[attribute.slug] = value
 
         # save entity and its attributes
         if commit:

@@ -34,12 +34,12 @@ class FormTest(TestCase):
 
     def test_form_validation(self):
         p = Patient.objects.create(name='Bob')
-        p.eav.age = 2
-        p.eav.dob = now()
-        p.eav.height = 14.1
-        p.eav.city = 'San Francisco'
-        p.eav.pregnant = False
-        p.eav.fever = EnumValue.objects.get(value='yes')
+        p.eav['age'] = 2
+        p.eav['dob'] = now()
+        p.eav['height'] = 14.1
+        p.eav['city'] = 'San Francisco'
+        p.eav['pregnant'] = False
+        p.eav['fever'] = EnumValue.objects.get(value='yes')
         p.save()
 
         # invalid age field

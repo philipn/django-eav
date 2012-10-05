@@ -16,7 +16,6 @@
 #
 #    You should have received a copy of the GNU Lesser General Public License
 #    along with EAV-Django.  If not, see <http://gnu.org/licenses/>.
-from django.template.defaultfilters import stringfilter
 '''
 ******
 fields
@@ -36,6 +35,7 @@ import re
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from django.core.exceptions import ValidationError
+from django.template.defaultfilters import stringfilter
 
 
 def slugify(value):
@@ -72,6 +72,7 @@ class EavSlugField(models.SlugField):
         Creates a slug based on the name
         '''
         return slugify(name)
+
 
 class EavDatatypeField(models.CharField):
     '''

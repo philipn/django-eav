@@ -383,34 +383,35 @@ class Entity(object):
         Set self.model equal to the instance of the model that we're attached
         to.  Also, store the content type of that instance.
         '''
+        self.eav_attributes = {}
         self.model = instance
 
     def __getitem__(self, name):
-        return self.__getattr__(name)
-
-    def __getattr__(self, name):
         '''
-        Tha magic getattr helper.  This is called whenevery you do
-        this_instance.<whatever>
-
-        Checks if *name* is a valid slug for attributes available to this
-        instances. If it is, tries to lookup the :class:`BaseValue` with that
-        attribute slug. If there is one, it returns the value of the
-        class:`BaseValue` object, otherwise it hasn't been set, so it returns
-        None.
+        Tha magic getitem helper.  This is called whenevery you do
+        this_instance[<whatever>]
         '''
-        if not name.startswith('_'):
-            try:
-                attribute = self.get_attribute_by_slug(name)
-            except self.model._eav_config_cls.attribute_cls.DoesNotExist:
-                raise AttributeError(_(u"%(obj)s has no EAV attribute named " \
-                                       u"'%(attr)s'") % \
-                                     {'obj': self.model, 'attr': name})
-            try:
-                return self.get_value_by_attribute(attribute).value
-            except self.model._eav_config_cls.value_cls.DoesNotExist:
-                raise AttributeError
-        return getattr(super(Entity, self), name)
+        try:
+            attribute = self.get_attribute_by_slug(name)
+        except self.model._eav_config_cls.attribute_cls.DoesNotExist:
+            raise KeyError(_(u"%(obj)s has no EAV attribute named " \
+                                   u"'%(attr)s'") % \
+                                 {'obj': self.model, 'attr': name})
+        try:
+            return self.get_value_by_attribute(attribute).value
+        except self.model._eav_config_cls.value_cls.DoesNotExist:
+            raise KeyError
+
+    def __setitem__(self, name, value):
+        self.eav_attributes[name] = value
+
+    def get(self, name, default):
+        if name in self.eav_attributes:
+            return self.eav_attributes[name]
+        try:
+            return self.__getitem__(name)
+        except KeyError:
+            return default
 
     def get_all_attributes(self):
         '''
@@ -431,8 +432,8 @@ class Entity(object):
         Saves all the EAV values that have been set on this entity.
         '''
         for attribute in self.get_all_attributes():
-            if hasattr(self, attribute.slug):
-                attribute_value = getattr(self, attribute.slug)
+            if attribute.slug in self.eav_attributes:
+                attribute_value = self.eav_attributes[attribute.slug]
                 attribute.save_value(self.model, attribute_value)
 
     def validate_attributes(self):
@@ -443,7 +444,7 @@ class Entity(object):
         Raise ``ValidationError`` if they can't be.
         '''
         for attribute in self.get_all_attributes():
-            value = getattr(self, attribute.slug, None)
+            value = self.get(attribute.slug, None)
             if value is not None:
                 try:
                     attribute.validate_value(value)

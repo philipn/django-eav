@@ -43,17 +43,17 @@ class LimitingAttributes(TestCase):
     def test_setting_attributes(self):
         p = Patient.objects.create(name='Jon')
         e = Encounter.objects.create(patient=p, num=1)
-        p.eav.age = 3
-        p.eav.height = 2.3
+        p.eav['age'] = 3
+        p.eav['height'] = 2.3
         p.save()
         self.assertEqual(PatientValue.objects.count(), 2)
-        e.eav_field.age = 4
-        e.eav_field.height = 4.5
+        e.eav_field['age'] = 4
+        e.eav_field['height'] = 4.5
         e.save()
         self.assertEqual(EncounterValue.objects.count(), 1)
         p = Patient.objects.get(name='Jon')
-        self.assertEqual(p.eav.age, 3)
-        self.assertEqual(p.eav.height, 2.3)
+        self.assertEqual(p.eav['age'], 3)
+        self.assertEqual(p.eav['height'], 2.3)
         e = Encounter.objects.get(num=1)
-        self.assertEqual(e.eav_field.age, 4)
-        self.assertFalse(hasattr(e.eav_field, 'height'))
+        self.assertEqual(e.eav_field['age'], 4)
+        self.assertFalse('height' in e.eav_field)
