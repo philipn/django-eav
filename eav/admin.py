@@ -20,8 +20,7 @@
 
 from django.contrib import admin
 from django.contrib.admin.options import (
-    ModelAdmin, InlineModelAdmin
-)
+    ModelAdmin, InlineModelAdmin, TabularInline)
 
 from django.forms.models import BaseInlineFormSet
 from django.utils.safestring import mark_safe
@@ -105,15 +104,16 @@ class AttributeAdmin(ModelAdmin):
     list_display = ('name', 'slug', 'datatype', 'description', 'site')
     list_filter = ['site']
 
+class EnumValueInline(TabularInline):
+    model = EnumValue
 
 class EnumGroupAdmin(ModelAdmin):
-    pass
+    inlines = [EnumValueInline]
 
 
 def register_admin():
     """
     Don't automatically register the generic EAV models unless asked.
     """
-    admin.site.register(EnumValue)
     admin.site.register(EnumGroup, EnumGroupAdmin)
 
