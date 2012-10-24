@@ -30,11 +30,11 @@ import re
 from copy import deepcopy
 
 from django.forms import BooleanField, CharField, DateTimeField, FloatField, \
-                         IntegerField, ModelForm, ChoiceField, \
+                         IntegerField, ModelForm, ModelMultipleChoiceField, \
                          Field, ValidationError
 from django.forms import Widget
+from django.forms.widgets import CheckboxSelectMultiple, SplitDateTimeWidget
 from django.forms.models import ModelChoiceField, inlineformset_factory
-from django.contrib.admin.widgets import AdminSplitDateTime
 from django.utils.translation import ugettext_lazy as _
 from django.utils.encoding import smart_unicode
 from django.template.loader import render_to_string
@@ -82,6 +82,15 @@ class UTF8FieldNamesMixin(object):
         prefix = super(UTF8FieldNamesMixin, self).add_prefix(field_name)
         return smart_unicode(prefix)
 
+
+class MultipleChoiceField(ModelMultipleChoiceField):
+    widget = CheckboxSelectMultiple
+
+
+class SplitDateTimeField(DateTimeField):
+    widget = SplitDateTimeWidget
+
+
 class BaseDynamicEntityForm(UTF8FieldNamesMixin, ModelForm):
     '''
     ModelForm for entity with support for EAV attributes. Form fields are
@@ -97,9 +106,9 @@ class BaseDynamicEntityForm(UTF8FieldNamesMixin, ModelForm):
         'text': CharField,
         'float': FloatField,
         'int': IntegerField,
-        'date': DateTimeField,
+        'date': SplitDateTimeField,
         'bool': BooleanField,
-        'enum': ChoiceField,
+        'enum': MultipleChoiceField,
     }
 
     def __init__(self, data=None, *args, **kwargs):
@@ -144,17 +153,14 @@ class BaseDynamicEntityForm(UTF8FieldNamesMixin, ModelForm):
                 # for enum enough standard validator
                 defaults['validators'] = []
 
-                enums = attribute.get_choices() \
-                                 .values_list('id', 'value')
+                choices  = attribute.get_choices()
+                defaults.update({
+                                 'queryset': choices,
+                                 'required': False,
+                                 })
 
-                choices = [('', '-----')] + list(enums)
-
-                defaults.update({'choices': choices})
                 if value:
-                    defaults.update({'initial': value.pk})
-
-            elif datatype == attribute.TYPE_DATE:
-                defaults.update({'widget': AdminSplitDateTime})
+                    defaults.update({'initial': value.all()})
 
             self.fields[field_name] = FieldOrForm(**defaults)
 
@@ -185,10 +191,8 @@ class BaseDynamicEntityForm(UTF8FieldNamesMixin, ModelForm):
                 continue
             value = self.cleaned_data.get(field_name)
             if attribute.datatype == attribute.TYPE_ENUM:
-                if value:
-                    value = attribute.enum_group.enums.get(pk=value)
-                else:
-                    value = None
+                if value is None:
+                    value = []
 
             self.entity[attribute.slug] = value
 

@@ -50,6 +50,6 @@ class FormTest(TestCase):
         # all valid
         data = {'age': 1, 'dob_0': '2012-01-01', 'dob_1': '12:00:00',
                 'height': 10.1, 'city': 'Moscow', 'pregnant': True,
-                'fever': EnumValue.objects.get(value='no').id}
+                'fever': [EnumValue.objects.get(value='no').id]}
         form = BaseDynamicEntityForm(data=data, instance=p)
         self.assertTrue(form.is_valid())

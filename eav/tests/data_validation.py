@@ -113,7 +113,7 @@ class DataValidation(TestCase):
         self.assertRaises(ValidationError, p.save)
         p.eav['fever'] = no
         p.save()
-        self.assertEqual(Patient.objects.get(pk=p.pk).eav['fever'], no)
+        self.assertIn(no, Patient.objects.get(pk=p.pk).eav['fever'].all())
 #
     def test_enum_datatype_without_enum_group(self):
         a = PatientAttribute(name='Age Bracket', datatype=PatientAttribute.TYPE_ENUM)

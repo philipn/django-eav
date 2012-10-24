@@ -258,6 +258,9 @@ class BaseAttribute(models.Model):
             return None
         return self.enum_group.enums.all()
 
+    def value_has_changed(self, old_value, new_value):
+        return True
+
     def save_value(self, entity, value):
         '''
         Called with *entity*, any django object registered with eav, and
@@ -274,9 +277,14 @@ class BaseAttribute(models.Model):
             value_obj = self.get_value_cls().objects.create(entity=entity,
                                              attribute=self)
 
-        if value != value_obj.value:
+        if self.value_has_changed(value_obj.value, value):
             if isinstance(value, (BaseModelForm, BaseModelFormSet)):
                 value = value.save()
+            if self.datatype == self.TYPE_ENUM:
+                if value is None:
+                    value = []
+                elif not hasattr(value, '__iter__'):
+                    value = [value]
             value_obj.value = value
             value_obj.save()
 
@@ -315,10 +323,10 @@ class BaseValue(models.Model):
                                       null=True, db_index=True)
     value_bool = models.NullBooleanField(_(u"Yes / No"), blank=True,
                                          null=True, db_index=True)
-    value_enum = models.ForeignKey(EnumValue,
-                                   verbose_name=_(u"multiple choice"),
-                                   blank=True, null=True,
-                                   related_name='eav_%(class)ss')
+    value_enum = models.ManyToManyField(EnumValue,
+                                        verbose_name=_(u"multiple choice"),
+                                        blank=True, null=True,
+                                        related_name='eav_%(class)ss')
 
     def save(self, *args, **kwargs):
         '''
@@ -326,19 +334,6 @@ class BaseValue(models.Model):
         '''
         self.full_clean()
         super(BaseValue, self).save(*args, **kwargs)
-
-    def clean(self):
-        '''
-        Raises ``ValidationError`` if this value's attribute is *TYPE_ENUM*
-        and value_enum is not a valid choice for this value's attribute.
-        '''
-        if self.attribute.datatype == BaseAttribute.TYPE_ENUM and \
-           self.value_enum:
-            if self.value_enum not in self.attribute.enum_group.enums.all():
-                raise ValidationError(_(u"%(choice)s is not a valid " \
-                                        u"choice for %s(attribute)") % \
-                                        {'choice': self.value_enum,
-                                         'attribute': self.attribute})
 
     @classmethod
     def get_datatype_choices(cls):
