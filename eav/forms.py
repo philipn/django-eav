@@ -147,6 +147,7 @@ class BaseDynamicEntityForm(UTF8FieldNamesMixin, ModelForm):
                 'label': attribute.name.capitalize(),
                 'help_text': attribute.help_text,
                 'validators': attribute.get_validators(),
+                'required': False,
             }
 
             if datatype == attribute.TYPE_ENUM:
@@ -156,7 +157,6 @@ class BaseDynamicEntityForm(UTF8FieldNamesMixin, ModelForm):
                 choices  = attribute.get_choices()
                 defaults.update({
                                  'queryset': choices,
-                                 'required': False,
                                  })
 
                 if value:
