@@ -116,8 +116,9 @@ class BaseDynamicEntityForm(UTF8FieldNamesMixin, ModelForm):
         config_cls = self.instance._eav_config_cls
         self.entity = getattr(self.instance, config_cls.eav_attr)
         self._build_dynamic_fields()
-        self.fields.keyOrder = [s.encode('utf-8')
-                                for s in self.entity.get_all_attribute_slugs()]
+        keyOrder = [s.encode('utf-8')
+                    for s in self.entity.get_all_attribute_slugs()]
+        self.fields.keyOrder = [s for s in keyOrder if s in self.fields]
 
     def _build_dynamic_fields(self):
         # reset form fields
