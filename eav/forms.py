@@ -62,6 +62,10 @@ def form_as_single_field(FormClass, instance, prefix):
         def value_from_datadict(self, data, files, name):
             return FormClass(instance=instance, data=data, prefix=prefix)
 
+        def _media(self):
+            return FormClass().media
+        media = property(_media)
+
     class ModelField(Field):
         widget = ModelFormWidget
 
