@@ -16,6 +16,7 @@
 #
 #    You should have received a copy of the GNU Lesser General Public License
 #    along with EAV-Django.  If not, see <http://gnu.org/licenses/>.
+from django.forms.fields import TypedChoiceField
 '''
 #####
 forms
@@ -29,9 +30,9 @@ Classes
 import re
 from copy import deepcopy
 
-from django.forms import BooleanField, CharField, DateTimeField, FloatField, \
-                         IntegerField, ModelForm, ModelMultipleChoiceField, \
-                         Field, ValidationError
+from django.forms import NullBooleanField, CharField, DateTimeField,\
+                         FloatField, IntegerField, ModelForm,\
+                         ModelMultipleChoiceField, Field, ValidationError
 from django.forms import Widget
 from django.forms.widgets import CheckboxSelectMultiple, SplitDateTimeWidget
 from django.forms.models import ModelChoiceField, inlineformset_factory
@@ -111,7 +112,7 @@ class BaseDynamicEntityForm(UTF8FieldNamesMixin, ModelForm):
         'float': FloatField,
         'int': IntegerField,
         'date': SplitDateTimeField,
-        'bool': BooleanField,
+        'bool': NullBooleanField,
         'enum': MultipleChoiceField,
     }
 
