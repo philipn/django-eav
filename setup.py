@@ -33,6 +33,7 @@ setup(
     url='http://github.com/mivanov/django-eav',
 
     packages=find_packages(),
+    include_package_data=True,
 
     zip_safe=False,
 
