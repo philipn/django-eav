@@ -35,6 +35,7 @@ Along with the :class:`Entity` helper class.
 Classes
 -------
 '''
+from itertools import chain
 
 from django.db import models
 from django.core.exceptions import ValidationError
@@ -338,7 +339,8 @@ class BaseValue(models.Model):
     @classmethod
     def get_datatype_choices(cls):
         value_field_prefix = 'value_'
-        value_fields = [f for f in cls._meta.fields
+        fields = chain(cls._meta.fields, cls._meta.many_to_many)
+        value_fields = [f for f in fields
                         if f.name.startswith(value_field_prefix)]
         return [(f.name[len(value_field_prefix):], f.verbose_name)
                 for f in value_fields]
@@ -396,6 +398,13 @@ class Entity(object):
             return self.get_value_by_attribute(attribute).value
         except self.model._eav_config_cls.value_cls.DoesNotExist:
             raise KeyError
+
+    def __contains__(self, name):
+        try:
+            self.__getitem__(name)
+            return True
+        except KeyError:
+            return False
 
     def __setitem__(self, name, value):
         self.eav_attributes[name] = value
