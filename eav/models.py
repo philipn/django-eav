@@ -16,6 +16,8 @@
 #
 #    You should have received a copy of the GNU Lesser General Public License
 #    along with EAV-Django.  If not, see <http://gnu.org/licenses/>.
+from django.db.models.fields.related import ForeignKey, ManyToManyField,\
+    OneToOneField
 '''
 ******
 models
@@ -259,7 +261,21 @@ class BaseAttribute(models.Model):
             return None
         return self.enum_group.enums.all()
 
+    def _formset_has_changed(self, formset):
+        # Note: in Django 1.4 this is built in
+        return any(form.has_changed() for form in formset)
+
     def value_has_changed(self, old_value, new_value):
+        if isinstance(new_value, (BaseModelForm,)):
+            return new_value.has_changed()
+        if isinstance(new_value, (BaseModelFormSet,)):
+            return self._formset_has_changed(new_value)
+
+        if self.datatype in (self.TYPE_BOOLEAN, self.TYPE_DATE,
+                             self.TYPE_FLOAT, self.TYPE_INT, self.TYPE_TEXT):
+            return old_value != new_value
+        if self.datatype in (self.TYPE_ENUM,):
+            return set(old_value.all()) != set(new_value)
         return True
 
     def save_value(self, entity, value):
@@ -275,19 +291,26 @@ class BaseAttribute(models.Model):
             value_obj = self.get_value_cls().objects.get(entity=entity,
                                            attribute=self)
         except self.get_value_cls().DoesNotExist:
-            value_obj = self.get_value_cls().objects.create(entity=entity,
-                                             attribute=self)
+            value_obj = self.get_value_cls()(entity=entity, attribute=self)
 
-        if self.value_has_changed(value_obj.value, value):
+        if not value_obj.pk or self.value_has_changed(value_obj.value, value):
             if isinstance(value, (BaseModelForm, BaseModelFormSet)):
                 value = value.save()
             if self.datatype == self.TYPE_ENUM:
+                already_saved = True
                 if value is None:
                     value = []
                 elif not hasattr(value, '__iter__'):
                     value = [value]
+
+            if value_obj.is_fk_or_m2m():
+                # For compatibility with versioning, we need to save FK fields
+                # before setting their value, since setting them will save the
+                # FK'd instance
+                value_obj.save()
             value_obj.value = value
-            value_obj.save()
+            if not value_obj.is_fk_or_m2m():
+                value_obj.save()
 
     def get_datatype_display(self):
         value_field = 'value_' + self.datatype
@@ -358,6 +381,15 @@ class BaseValue(models.Model):
         setattr(self, 'value_%s' % self.attribute.datatype, new_value)
 
     value = property(_get_value, _set_value)
+
+    def is_fk_or_m2m(self):
+        '''
+        Returns True if this value's data field is a foreign key or m2m.
+        '''
+        data_field_name = 'value_%s' % self.attribute.datatype
+        data_field = self._meta.get_field(data_field_name)
+        return isinstance(data_field, (ForeignKey, OneToOneField,
+                                       ManyToManyField))
 
     def __unicode__(self):
         return u"%s - %s: \"%s\"" % (self.entity, self.attribute.name,
