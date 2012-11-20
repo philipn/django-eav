@@ -303,13 +303,13 @@ class BaseAttribute(models.Model):
                 elif not hasattr(value, '__iter__'):
                     value = [value]
 
-            if value_obj.is_fk_or_m2m():
-                # For compatibility with versioning, we need to save FK fields
+            if value_obj.is_m2m():
+                # For compatibility with versioning, we need to save M2M fields
                 # before setting their value, since setting them will save the
-                # FK'd instance
+                # M2M relation
                 value_obj.save()
             value_obj.value = value
-            if not value_obj.is_fk_or_m2m():
+            if not value_obj.is_m2m():
                 value_obj.save()
 
     def get_datatype_display(self):
@@ -382,14 +382,13 @@ class BaseValue(models.Model):
 
     value = property(_get_value, _set_value)
 
-    def is_fk_or_m2m(self):
+    def is_m2m(self):
         '''
-        Returns True if this value's data field is a foreign key or m2m.
+        Returns True if this value's data field is a m2m.
         '''
         data_field_name = 'value_%s' % self.attribute.datatype
         data_field = self._meta.get_field(data_field_name)
-        return isinstance(data_field, (ForeignKey, OneToOneField,
-                                       ManyToManyField))
+        return isinstance(data_field, ManyToManyField)
 
     def __unicode__(self):
         return u"%s - %s: \"%s\"" % (self.entity, self.attribute.name,
