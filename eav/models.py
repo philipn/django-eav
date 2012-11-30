@@ -352,13 +352,6 @@ class BaseValue(models.Model):
                                         blank=True, null=True,
                                         related_name='eav_%(class)ss')
 
-    def save(self, *args, **kwargs):
-        '''
-        Validate and save this value
-        '''
-        self.full_clean()
-        super(BaseValue, self).save(*args, **kwargs)
-
     @classmethod
     def get_datatype_choices(cls):
         value_field_prefix = 'value_'
