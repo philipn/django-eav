@@ -92,7 +92,7 @@ def validate_enum(value):
     :class:`~eav.models.EnumValue` model instance.
     '''
     from .models import EnumValue
-    if not isinstance(value, EnumValue):
+    if not all(isinstance(v, EnumValue) for v in value.all()):
         raise ValidationError(_(u"Must be an EnumValue model object instance"))
-    if not value.pk:
+    if not all(v.pk for v in value.all()) :
         raise ValidationError(_(u"EnumValue has not been saved yet"))

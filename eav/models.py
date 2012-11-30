@@ -215,10 +215,12 @@ class BaseAttribute(models.Model):
         Check *value* against the validators returned by
         :meth:`get_validators` for this attribute.
         '''
+        if value is None:  # None is always a sentinel for "unset" 
+            return
         for validator in self.get_validators():
             validator(value)
         if self.datatype == self.TYPE_ENUM:
-            if value not in self.enum_group.enums.all():
+            if not all([v in self.enum_group.enums.all()for v in value.all()]):
                 raise ValidationError(_(u"%(enum)s is not a valid choice "
                                         u"for %(attr)s") % \
                                        {'enum': value, 'attr': self})
