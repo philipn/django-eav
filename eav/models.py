@@ -68,8 +68,8 @@ class EnumGroup(models.Model):
         return self.name
 
     class Meta:
-        verbose_name = _(u'enum group')
-        verbose_name_plural = _(u'enum groups')
+        verbose_name = _(u'multiple-choice group')
+        verbose_name_plural = _(u'multiple-choice groups')
 
 
 class EnumValue(models.Model):
@@ -102,8 +102,8 @@ class EnumValue(models.Model):
         return self.value
 
     class Meta:
-        verbose_name = _(u'enum value')
-        verbose_name_plural = _(u'enum values')
+        verbose_name = _(u'choice')
+        verbose_name_plural = _(u'choices')
 
 
 class BaseAttribute(models.Model):

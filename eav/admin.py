@@ -104,8 +104,10 @@ class AttributeAdmin(ModelAdmin):
     list_display = ('name', 'slug', 'datatype', 'description', 'site')
     list_filter = ['site']
 
+
 class EnumValueInline(TabularInline):
     model = EnumValue
+
 
 class EnumGroupAdmin(ModelAdmin):
     inlines = [EnumValueInline]
