@@ -15,5 +15,5 @@ class MiscModels(TestCase):
 
     def test_attribute_help_text(self):
         desc = 'Patient Age'
-        a = PatientAttribute.objects.create(name='age', description=desc, datatype=PatientAttribute.TYPE_INT)
+        a = PatientAttribute.objects.create(name='age', description=desc, type=PatientAttribute.TYPE_INT)
         self.assertEqual(a.help_text, desc)

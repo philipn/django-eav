@@ -76,8 +76,8 @@ class Registry(object):
         config_cls.attribute_cls = attribute_cls
         config_cls.value_cls = value_cls
         attribute_cls.parent_model = model_cls
-        attr_datatype_field = attribute_cls._meta.get_field('datatype')
-        attr_datatype_field._choices = value_cls.get_datatype_choices()
+        attr_type_field = attribute_cls._meta.get_field('type')
+        attr_type_field._choices = value_cls.get_type_choices()
 
         # set _eav_config_cls on the model so we can access it there
         setattr(model_cls, '_eav_config_cls', config_cls)

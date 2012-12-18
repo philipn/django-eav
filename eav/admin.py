@@ -101,7 +101,7 @@ class BaseEntityInline(InlineModelAdmin):
 
 
 class AttributeAdmin(ModelAdmin):
-    list_display = ('name', 'slug', 'datatype', 'description', 'site')
+    list_display = ('name', 'slug', 'type', 'description', 'site')
     list_filter = ['site']
 
 

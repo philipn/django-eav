@@ -141,9 +141,9 @@ class BaseDynamicEntityForm(UTF8FieldNamesMixin, ModelForm):
         return self.FIELD_CLASSES[type]
 
     def create_form_fields_for_attribute(self, attribute, value):
-        datatype = attribute.datatype
+        type = attribute.type
         field_name = attribute.slug.encode('utf-8')
-        FieldOrForm = self.get_field_class_for_type(datatype)
+        FieldOrForm = self.get_field_class_for_type(type)
         is_form = hasattr(FieldOrForm, 'as_table')
         if is_form:
             # Assume this is for a FK'd instance, construct its form
@@ -158,7 +158,7 @@ class BaseDynamicEntityForm(UTF8FieldNamesMixin, ModelForm):
                 'required': False,
             }
 
-            if datatype == attribute.TYPE_ENUM:
+            if type == attribute.TYPE_ENUM:
                 # for enum enough standard validator
                 defaults['validators'] = []
 
@@ -173,7 +173,7 @@ class BaseDynamicEntityForm(UTF8FieldNamesMixin, ModelForm):
             self.fields[field_name] = FieldOrForm(**defaults)
 
             # fill initial data (if attribute was already defined)
-            if value and not datatype == attribute.TYPE_ENUM: #enum  done above
+            if value and not type == attribute.TYPE_ENUM: #enum  done above
                 self.initial[field_name] = value
 
     def save(self, commit=True):
@@ -198,7 +198,7 @@ class BaseDynamicEntityForm(UTF8FieldNamesMixin, ModelForm):
             if field_name not in self.cleaned_data:
                 continue
             value = self.cleaned_data.get(field_name)
-            if attribute.datatype == attribute.TYPE_ENUM:
+            if attribute.type == attribute.TYPE_ENUM:
                 if value is None:
                     value = []
 

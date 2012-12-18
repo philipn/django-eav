@@ -56,7 +56,7 @@ from .fields import EavSlugField, EavDatatypeField
 class EnumGroup(models.Model):
     '''
     *EnumGroup* objects have just a  *name* ``CharField``.
-    :class:`BaseAttribute` classes with datatype *TYPE_ENUM* have a
+    :class:`BaseAttribute` classes with type *TYPE_ENUM* have a
     ``ForeignKey`` field to *EnumGroup*.
 
     See :class:`EnumValue` for an example.
@@ -90,7 +90,7 @@ class EnumValue(models.Model):
     >>> ynu.value_set.add(yes, no, unkown)
 
     >>> PatientAttribute.objects.create(name='Has Fever?',
-    ...                          datatype=BaseAttribute.TYPE_ENUM,
+    ...                          type=BaseAttribute.TYPE_ENUM,
     ...                          enum_group=ynu)
     '''
     value = models.CharField(_(u"value"), db_index=True,
@@ -116,17 +116,17 @@ class BaseAttribute(models.Model):
     be unique.  If you don't provide a slug, a default slug (derived from
     name), will be created.
 
-    The available datatypes are determined by the subclassing model. 
+    The available types are determined by the subclassing model. 
 
     This is an abstract model. All you have to do is subclass and register your
     concrete model. See :class:`BaseValue` for a full example.
 
     Examples:
 
-    >>> PatientAttribute.objects.create(name='Height', datatype=BaseAttribute.TYPE_INT)
+    >>> PatientAttribute.objects.create(name='Height', type=BaseAttribute.TYPE_INT)
     <PatientAttribute: Height (Integer)>
 
-    >>> PatientAttribute.objects.create(name='Color', datatype=BaseAttribute.TYPE_TEXT)
+    >>> PatientAttribute.objects.create(name='Color', type=BaseAttribute.TYPE_TEXT)
     <PatientAttribute: Color (Text)>
 
     >>> yes = EnumValue(value='yes')
@@ -135,12 +135,12 @@ class BaseAttribute(models.Model):
     >>> ynu = EnumGroup.objects.create(name='Yes / No / Unkown')
     >>> ynu.enums.add(yes, no, unkown)
     >>> PatientAttribute.objects.create(name='Has Fever?',
-    ...                          datatype=BaseAttribute.TYPE_ENUM,
+    ...                          type=BaseAttribute.TYPE_ENUM,
     ...                          enum_group=ynu)
     <PatientAttribute: Has Fever? (Multiple Choice)>
 
     .. warning:: Once an attribute has been used by an entity, you cannot
-                 change it's datatype.
+                 change it's type.
     '''
 
     TYPE_TEXT = 'text'
@@ -178,7 +178,7 @@ class BaseAttribute(models.Model):
     def help_text(self):
         return self.description
 
-    datatype = EavDatatypeField(_(u"data type"), max_length=8)
+    type = EavDatatypeField(_(u"data type"), max_length=8)
 
     objects = models.Manager()
     on_site = CurrentSiteManager()
@@ -189,7 +189,7 @@ class BaseAttribute(models.Model):
     def get_validators(self):
         '''
         Returns the appropriate validator function from :mod:`~eav.validators`
-        as a list (of length one) for the datatype.
+        as a list (of length one) for the type.
 
         .. note::
            The reason it returns it as a list, is eventually we may want this
@@ -205,7 +205,7 @@ class BaseAttribute(models.Model):
             'enum': validate_enum,
         }
 
-        validation_function = DATATYPE_VALIDATORS.get(self.datatype, None)
+        validation_function = DATATYPE_VALIDATORS.get(self.type, None)
         if validation_function:
             return [validation_function]
         return []
@@ -219,7 +219,7 @@ class BaseAttribute(models.Model):
             return
         for validator in self.get_validators():
             validator(value)
-        if self.datatype == self.TYPE_ENUM:
+        if self.type == self.TYPE_ENUM:
             if not all([v in self.enum_group.enums.all()for v in value.all()]):
                 raise ValidationError(_(u"%(enum)s is not a valid choice "
                                         u"for %(attr)s") % \
@@ -237,19 +237,19 @@ class BaseAttribute(models.Model):
     def clean(self):
         '''
         Validates the attribute.  Will raise ``ValidationError`` if
-        the attribute's datatype is *TYPE_ENUM* and enum_group is not set,
+        the attribute's type is *TYPE_ENUM* and enum_group is not set,
         or if the attribute is not *TYPE_ENUM* and the enum group is set.
         '''
         self.slug = EavSlugField.create_slug_from_name(self.name)
         if not self.slug:
             raise ValidationError(_(u"The attribute name is invalid."))
 
-        if self.datatype == self.TYPE_ENUM and not self.enum_group:
+        if self.type == self.TYPE_ENUM and not self.enum_group:
             raise ValidationError(_(
                 u"You must set the choice group for multiple choice " \
                 u"attributes"))
 
-        if self.datatype != self.TYPE_ENUM and self.enum_group:
+        if self.type != self.TYPE_ENUM and self.enum_group:
             raise ValidationError(_(
                 u"You can only assign a choice group to multiple choice " \
                 u"attributes"))
@@ -257,9 +257,9 @@ class BaseAttribute(models.Model):
     def get_choices(self):
         '''
         Returns a query set of :class:`EnumValue` objects for this attribute.
-        Returns None if the datatype of this attribute is not *TYPE_ENUM*.
+        Returns None if the type of this attribute is not *TYPE_ENUM*.
         '''
-        if not self.datatype == self.TYPE_ENUM:
+        if not self.type == self.TYPE_ENUM:
             return None
         return self.enum_group.enums.all()
 
@@ -273,10 +273,10 @@ class BaseAttribute(models.Model):
         if isinstance(new_value, (BaseModelFormSet,)):
             return self._formset_has_changed(new_value)
 
-        if self.datatype in (self.TYPE_BOOLEAN, self.TYPE_DATE,
+        if self.type in (self.TYPE_BOOLEAN, self.TYPE_DATE,
                              self.TYPE_FLOAT, self.TYPE_INT, self.TYPE_TEXT):
             return old_value != new_value
-        if self.datatype in (self.TYPE_ENUM,):
+        if self.type in (self.TYPE_ENUM,):
             return set(old_value.all()) != set(new_value)
         return True
 
@@ -298,7 +298,7 @@ class BaseAttribute(models.Model):
         if not value_obj.pk or self.value_has_changed(value_obj.value, value):
             if isinstance(value, (BaseModelForm, BaseModelFormSet)):
                 value = value.save()
-            if self.datatype == self.TYPE_ENUM:
+            if self.type == self.TYPE_ENUM:
                 already_saved = True
                 if value is None:
                     value = []
@@ -314,12 +314,12 @@ class BaseAttribute(models.Model):
             if not value_obj.is_m2m():
                 value_obj.save()
 
-    def get_datatype_display(self):
-        value_field = 'value_' + self.datatype
+    def get_type_display(self):
+        value_field = 'value_' + self.type
         return self.get_value_cls()._meta.get_field(value_field).verbose_name
 
     def __unicode__(self):
-        return u"%s (%s)" % (self.name, self.get_datatype_display())
+        return u"%s (%s)" % (self.name, self.get_type_display())
 
 
 class BaseValue(models.Model):
@@ -355,7 +355,7 @@ class BaseValue(models.Model):
                                         related_name='eav_%(class)ss')
 
     @classmethod
-    def get_datatype_choices(cls):
+    def get_type_choices(cls):
         value_field_prefix = 'value_'
         fields = chain(cls._meta.fields, cls._meta.many_to_many)
         value_fields = [f for f in fields
@@ -367,13 +367,13 @@ class BaseValue(models.Model):
         '''
         Return the python object this value is holding
         '''
-        return getattr(self, 'value_%s' % self.attribute.datatype)
+        return getattr(self, 'value_%s' % self.attribute.type)
 
     def _set_value(self, new_value):
         '''
         Set the object this value is holding
         '''
-        setattr(self, 'value_%s' % self.attribute.datatype, new_value)
+        setattr(self, 'value_%s' % self.attribute.type, new_value)
 
     value = property(_get_value, _set_value)
 
@@ -381,7 +381,7 @@ class BaseValue(models.Model):
         '''
         Returns True if this value's data field is a m2m.
         '''
-        data_field_name = 'value_%s' % self.attribute.datatype
+        data_field_name = 'value_%s' % self.attribute.type
         data_field = self._meta.get_field(data_field_name)
         return isinstance(data_field, ManyToManyField)
 

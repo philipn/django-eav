@@ -20,7 +20,7 @@
 **********
 validators
 **********
-This module contains a validator for each BaseAttribute datatype.
+This module contains a validator for each BaseAttribute type.
 
 A validator is a callable that takes a value and raises a ``ValidationError``
 if it doesn’t meet some criteria. (see

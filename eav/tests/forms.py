@@ -14,11 +14,11 @@ class FormTest(TestCase):
     def setUp(self):
         eav.register(Patient, PatientAttribute, PatientValue)
 
-        PatientAttribute.objects.create(name='Age', datatype=PatientAttribute.TYPE_INT)
-        PatientAttribute.objects.create(name='DoB', datatype=PatientAttribute.TYPE_DATE)
-        PatientAttribute.objects.create(name='Height', datatype=PatientAttribute.TYPE_FLOAT)
-        PatientAttribute.objects.create(name='City', datatype=PatientAttribute.TYPE_TEXT)
-        PatientAttribute.objects.create(name='Pregnant?', datatype=PatientAttribute.TYPE_BOOLEAN)
+        PatientAttribute.objects.create(name='Age', type=PatientAttribute.TYPE_INT)
+        PatientAttribute.objects.create(name='DoB', type=PatientAttribute.TYPE_DATE)
+        PatientAttribute.objects.create(name='Height', type=PatientAttribute.TYPE_FLOAT)
+        PatientAttribute.objects.create(name='City', type=PatientAttribute.TYPE_TEXT)
+        PatientAttribute.objects.create(name='Pregnant?', type=PatientAttribute.TYPE_BOOLEAN)
 
         yes = EnumValue.objects.create(value='yes')
         no = EnumValue.objects.create(value='no')
@@ -27,7 +27,7 @@ class FormTest(TestCase):
         ynu.enums.add(yes)
         ynu.enums.add(no)
         ynu.enums.add(unkown)
-        PatientAttribute.objects.create(name='Fever?', datatype=PatientAttribute.TYPE_ENUM, enum_group=ynu)
+        PatientAttribute.objects.create(name='Fever?', type=PatientAttribute.TYPE_ENUM, enum_group=ynu)
 
     def tearDown(self):
         eav.unregister(Patient)

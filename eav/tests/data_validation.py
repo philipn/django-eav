@@ -19,27 +19,27 @@ class DataValidation(TestCase):
     def setUp(self):
         eav.register(Patient, PatientAttribute, PatientValue)
 
-        PatientAttribute.objects.create(name='Age', datatype=PatientAttribute.TYPE_INT)
-        PatientAttribute.objects.create(name='DoB', datatype=PatientAttribute.TYPE_DATE)
-        PatientAttribute.objects.create(name='Height', datatype=PatientAttribute.TYPE_FLOAT)
-        PatientAttribute.objects.create(name='City', datatype=PatientAttribute.TYPE_TEXT)
-        PatientAttribute.objects.create(name='Pregnant?', datatype=PatientAttribute.TYPE_BOOLEAN)
+        PatientAttribute.objects.create(name='Age', type=PatientAttribute.TYPE_INT)
+        PatientAttribute.objects.create(name='DoB', type=PatientAttribute.TYPE_DATE)
+        PatientAttribute.objects.create(name='Height', type=PatientAttribute.TYPE_FLOAT)
+        PatientAttribute.objects.create(name='City', type=PatientAttribute.TYPE_TEXT)
+        PatientAttribute.objects.create(name='Pregnant?', type=PatientAttribute.TYPE_BOOLEAN)
 
     def tearDown(self):
         eav.unregister(Patient)
 
     def test_bad_slug(self):
         self.assertRaises(ValidationError, PatientAttribute.objects.create,
-                          name='!!', datatype=PatientAttribute.TYPE_TEXT)
+                          name='!!', type=PatientAttribute.TYPE_TEXT)
 
-    def test_changing_datatypes(self):
-        a = PatientAttribute.objects.create(name='Eye Color', datatype=PatientAttribute.TYPE_INT)
-        a.datatype = PatientAttribute.TYPE_TEXT
+    def test_changing_types(self):
+        a = PatientAttribute.objects.create(name='Eye Color', type=PatientAttribute.TYPE_INT)
+        a.type = PatientAttribute.TYPE_TEXT
         a.save()
         b = Patient.objects.create(name='Bob')
         b.eav['eye_color']='brown'
         b.save()
-        a.datatype = PatientAttribute.TYPE_INT
+        a.type = PatientAttribute.TYPE_INT
         self.assertRaises(ValidationError, a.save)
 
     def test_int_validation(self):
@@ -98,7 +98,7 @@ class DataValidation(TestCase):
         ynu.enums.add(yes)
         ynu.enums.add(no)
         ynu.enums.add(unkown)
-        PatientAttribute.objects.create(name='Fever?', datatype=PatientAttribute.TYPE_ENUM, enum_group=ynu)
+        PatientAttribute.objects.create(name='Fever?', type=PatientAttribute.TYPE_ENUM, enum_group=ynu)
 
         p = Patient.objects.create(name='Joe')
         p.eav['fever'] = 5
@@ -115,8 +115,8 @@ class DataValidation(TestCase):
         p.save()
         self.assertIn(no, Patient.objects.get(pk=p.pk).eav['fever'].all())
 #
-    def test_enum_datatype_without_enum_group(self):
-        a = PatientAttribute(name='Age Bracket', datatype=PatientAttribute.TYPE_ENUM)
+    def test_enum_type_without_enum_group(self):
+        a = PatientAttribute(name='Age Bracket', type=PatientAttribute.TYPE_ENUM)
         self.assertRaises(ValidationError, a.save)
         yes = EnumValue.objects.create(value='yes')
         no = EnumValue.objects.create(value='no')
@@ -125,10 +125,10 @@ class DataValidation(TestCase):
         ynu.enums.add(yes)
         ynu.enums.add(no)
         ynu.enums.add(unkown)
-        a = PatientAttribute(name='Age Bracket', datatype=PatientAttribute.TYPE_ENUM, enum_group=ynu)
+        a = PatientAttribute(name='Age Bracket', type=PatientAttribute.TYPE_ENUM, enum_group=ynu)
         a.save()
 
-    def test_enum_group_on_other_datatype(self):
+    def test_enum_group_on_other_type(self):
         yes = EnumValue.objects.create(value='yes')
         no = EnumValue.objects.create(value='no')
         unkown = EnumValue.objects.create(value='unkown')
@@ -136,5 +136,5 @@ class DataValidation(TestCase):
         ynu.enums.add(yes)
         ynu.enums.add(no)
         ynu.enums.add(unkown)
-        a = PatientAttribute(name='color', datatype=PatientAttribute.TYPE_TEXT, enum_group=ynu)
+        a = PatientAttribute(name='color', type=PatientAttribute.TYPE_TEXT, enum_group=ynu)
         self.assertRaises(ValidationError, a.save)

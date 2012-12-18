@@ -22,13 +22,13 @@ class LimitingAttributes(TestCase):
                      EncounterEavConfig)
         eav.register(Patient, PatientAttribute, PatientValue)
 
-        PatientAttribute.objects.create(name='age', datatype=PatientAttribute.TYPE_INT)
-        PatientAttribute.objects.create(name='height', datatype=PatientAttribute.TYPE_FLOAT)
-        PatientAttribute.objects.create(name='weight', datatype=PatientAttribute.TYPE_FLOAT)
+        PatientAttribute.objects.create(name='age', type=PatientAttribute.TYPE_INT)
+        PatientAttribute.objects.create(name='height', type=PatientAttribute.TYPE_FLOAT)
+        PatientAttribute.objects.create(name='weight', type=PatientAttribute.TYPE_FLOAT)
 
-        EncounterAttribute.objects.create(name='age', datatype=EncounterAttribute.TYPE_INT)
-        EncounterAttribute.objects.create(name='height', datatype=EncounterAttribute.TYPE_FLOAT)
-        EncounterAttribute.objects.create(name='weight', datatype=EncounterAttribute.TYPE_FLOAT)
+        EncounterAttribute.objects.create(name='age', type=EncounterAttribute.TYPE_INT)
+        EncounterAttribute.objects.create(name='height', type=EncounterAttribute.TYPE_FLOAT)
+        EncounterAttribute.objects.create(name='weight', type=EncounterAttribute.TYPE_FLOAT)
 
     def tearDown(self):
         eav.unregister(Encounter)

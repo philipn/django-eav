@@ -76,12 +76,12 @@ class EavSlugField(models.SlugField):
 
 class EavDatatypeField(models.CharField):
     '''
-    The datatype field used by :class:`~eav.models.BaseAttribute`
+    The type field used by :class:`~eav.models.BaseAttribute`
     '''
 
     def validate(self, value, instance):
         '''
-        Raise ``ValidationError`` if they try to change the datatype of an
+        Raise ``ValidationError`` if they try to change the type of an
         :class:`~eav.models.BaseAttribute` that is already used by
         :class:`~eav.models.Value` objects.
         '''
@@ -89,7 +89,7 @@ class EavDatatypeField(models.CharField):
         if not instance.pk:
             return
         if instance.value_set.count():
-            raise ValidationError(_(u"You cannot change the datatype of an "
+            raise ValidationError(_(u"You cannot change the type of an "
                                     u"attribute that is already in use."))
 
 
